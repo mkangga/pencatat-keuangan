@@ -3,7 +3,8 @@ import { auth } from '../firebase';
 import { NavLink } from 'react-router-dom';
 import { 
   Home, User as UserIcon, ArrowUpRight, ArrowDownRight, 
-  ClipboardList, CreditCard, TrendingUp, Settings, LogOut, PieChart, Wallet, Tags
+  ClipboardList, CreditCard, TrendingUp, Settings, LogOut, PieChart, Wallet, Tags,
+  Moon, Sun
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -11,9 +12,11 @@ interface SidebarProps {
   className?: string;
   onItemClick?: () => void;
   isCollapsed?: boolean;
+  isDarkMode?: boolean;
+  toggleDarkMode?: () => void;
 }
 
-export default function Sidebar({ user, className = '', onItemClick, isCollapsed = false }: SidebarProps) {
+export default function Sidebar({ user, className = '', onItemClick, isCollapsed = false, isDarkMode, toggleDarkMode }: SidebarProps) {
   const handleLogout = async () => {
     try {
       await auth.signOut();
@@ -37,12 +40,12 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
   ];
 
   return (
-    <aside className={`bg-white border-r border-gray-100 flex-shrink-0 flex flex-col h-full min-h-0 ${className}`}>
-      <div className={`p-6 flex items-center gap-3 border-b border-gray-50 ${isCollapsed ? 'justify-center' : ''}`}>
+    <aside className={`bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex-shrink-0 flex flex-col h-full min-h-0 transition-colors duration-300 ${className}`}>
+      <div className={`p-6 flex items-center gap-3 border-b border-gray-50 dark:border-gray-700 ${isCollapsed ? 'justify-center' : ''}`}>
         <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex-shrink-0 flex items-center justify-center font-bold text-sm">
           {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'A'}
         </div>
-        {!isCollapsed && <span className="font-semibold text-gray-800 truncate">{user.displayName || 'User'}</span>}
+        {!isCollapsed && <span className="font-semibold text-gray-800 dark:text-gray-200 truncate">{user.displayName || 'User'}</span>}
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 pb-20">
@@ -57,12 +60,12 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
               className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors w-full text-left ${
                 isActive 
                   ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-200' 
-                  : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-600'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400'
               } ${isCollapsed ? 'justify-center px-0' : ''}`}
             >
               {({ isActive }) => (
                 <>
-                  <Icon size={18} className={isActive ? 'text-white' : 'text-gray-400'} />
+                  <Icon size={18} className={isActive ? 'text-white' : 'text-gray-400 dark:text-gray-500'} />
                   {!isCollapsed && item.name}
                 </>
               )}
@@ -71,13 +74,23 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-50 pb-8 md:pb-4">
+      <div className="p-4 border-t border-gray-50 dark:border-gray-700 pb-8 md:pb-4 space-y-2">
+        {toggleDarkMode && (
+          <button
+            onClick={() => { toggleDarkMode(); onItemClick?.(); }}
+            title={isCollapsed ? (isDarkMode ? "Mode Terang" : "Mode Gelap") : ""}
+            className={`flex items-center gap-3 px-4 py-3 w-full rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors ${isCollapsed ? 'justify-center px-0' : ''}`}
+          >
+            {isDarkMode ? <Sun size={18} className="opacity-70" /> : <Moon size={18} className="opacity-70" />}
+            {!isCollapsed && (isDarkMode ? 'Mode Terang' : 'Mode Gelap')}
+          </button>
+        )}
         <button
           onClick={() => { handleLogout(); onItemClick?.(); }}
           title={isCollapsed ? "Logout" : ""}
-          className={`flex items-center gap-3 px-4 py-3 w-full rounded-xl text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors ${isCollapsed ? 'justify-center px-0' : ''}`}
+          className={`flex items-center gap-3 px-4 py-3 w-full rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-colors ${isCollapsed ? 'justify-center px-0' : ''}`}
         >
-          <LogOut size={18} className="text-gray-400" />
+          <LogOut size={18} className="opacity-70" />
           {!isCollapsed && 'Logout'}
         </button>
       </div>

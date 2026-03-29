@@ -42,39 +42,39 @@ export default function Settings({ user }: { user: User }) {
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6 font-sans">Pengaturan</h1>
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
+      <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 font-sans transition-colors duration-300">Pengaturan</h1>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-6 transition-colors duration-300">
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Preferensi Aplikasi</h3>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Preferensi Aplikasi</h3>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+            <div className="flex items-center justify-between p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <div>
-                <p className="font-medium text-gray-800">Mata Uang</p>
-                <p className="text-sm text-gray-500">Pilih mata uang default</p>
+                <p className="font-medium text-gray-800 dark:text-gray-100">Mata Uang</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Pilih mata uang default</p>
               </div>
-              <select className="px-4 py-2 border border-gray-200 rounded-lg bg-white font-medium text-gray-700 outline-none focus:ring-2 focus:ring-emerald-500">
+              <select className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg font-medium text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors duration-300">
                 <option>IDR (Rupiah)</option>
                 <option>USD (Dollar)</option>
               </select>
             </div>
-            <div className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+            <div className="flex items-center justify-between p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <div>
-                <p className="font-medium text-gray-800">Notifikasi</p>
-                <p className="text-sm text-gray-500">Terima pengingat harian</p>
+                <p className="font-medium text-gray-800 dark:text-gray-100">Notifikasi</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Terima pengingat harian</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" value="" className="sr-only peer" defaultChecked />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 dark:peer-focus:ring-emerald-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
               </label>
             </div>
           </div>
         </div>
         
-        <div className="pt-6 border-t border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 text-red-600">Zona Bahaya</h3>
-          <div className="p-5 border border-red-100 bg-red-50 rounded-xl">
-            <p className="font-medium text-red-800 mb-2">Hapus Semua Data</p>
-            <p className="text-sm text-red-600 mb-4">Tindakan ini tidak dapat dibatalkan. Semua transaksi, hutang, dan target akan dihapus permanen dari database.</p>
+        <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 text-red-600 dark:text-red-400">Zona Bahaya</h3>
+          <div className="p-5 border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 rounded-xl transition-colors duration-300">
+            <p className="font-medium text-red-800 dark:text-red-300 mb-2">Hapus Semua Data</p>
+            <p className="text-sm text-red-600 dark:text-red-400 mb-4">Tindakan ini tidak dapat dibatalkan. Semua transaksi, hutang, dan target akan dihapus permanen dari database.</p>
             
             {deleteState === 'idle' && (
               <button onClick={handleDeleteClick} className="bg-red-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-red-700 transition-colors shadow-sm">
@@ -93,7 +93,7 @@ export default function Settings({ user }: { user: User }) {
                 <button onClick={confirmDelete} className="bg-red-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-red-700 transition-colors shadow-sm animate-pulse">
                   Konfirmasi Hapus Permanen
                 </button>
-                <button onClick={() => setDeleteState('idle')} className="bg-white text-gray-700 border border-gray-300 px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
+                <button onClick={() => setDeleteState('idle')} className="bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm">
                   Batal
                 </button>
               </div>

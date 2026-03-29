@@ -11,7 +11,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center py-2 px-1 z-50">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-around items-center py-2 px-1 z-50 transition-colors duration-300">
       {navItems.map((item) => {
         const Icon = item.icon;
         return (
@@ -19,7 +19,7 @@ export default function BottomNav() {
             key={item.name}
             to={item.path}
             className={({ isActive }) => `flex flex-col items-center gap-1 p-2 rounded-lg text-xs font-medium transition-colors ${
-              isActive ? 'text-emerald-600' : 'text-gray-500'
+              isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'
             }`}
           >
             <Icon size={20} />

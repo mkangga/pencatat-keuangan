@@ -41,7 +41,7 @@ export default function TransactionList({ transactions, type, onEdit }: Transact
 
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500 text-sm">
+      <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
         Belum ada data {isIncome ? 'pemasukan' : 'pengeluaran'}.
       </div>
     );
@@ -50,37 +50,37 @@ export default function TransactionList({ transactions, type, onEdit }: Transact
   return (
     <div className="space-y-1">
       {transactions.map((tx) => (
-        <div key={tx.id} className="group flex items-center justify-between py-3 hover:bg-gray-50 rounded-xl transition-colors px-2">
+        <div key={tx.id} className="group flex items-center justify-between py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors px-2">
           <div className="flex items-center gap-4">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              isIncome ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
+              isIncome ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
             }`}>
               <Icon size={16} strokeWidth={3} />
             </div>
             <div>
-              <p className="font-medium text-gray-800 text-sm">{tx.description}</p>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="font-medium text-gray-800 dark:text-gray-200 text-sm">{tx.description}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                 {format(new Date(tx.date), 'dd-MM-yyyy HH:mm', { locale: id })}
                 {tx.category && ` - ${tx.category}`}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className={`font-semibold text-sm ${isIncome ? 'text-emerald-600' : 'text-red-600'}`}>
+            <div className={`font-semibold text-sm ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
               {isIncome ? '+' : '-'} {formatCurrency(tx.amount)}
             </div>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               {onEdit && (
                 <button 
                   onClick={() => onEdit(tx)}
-                  className="text-gray-300 hover:text-blue-500 transition-colors p-1"
+                  className="text-gray-300 dark:text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-1"
                 >
                   <Edit2 size={16} />
                 </button>
               )}
               <button 
                 onClick={() => setDeleteId(tx.id)}
-                className="text-gray-300 hover:text-red-500 transition-colors p-1"
+                className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1"
               >
                 <Trash2 size={16} />
               </button>

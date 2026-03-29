@@ -55,8 +55,8 @@ export default function Analysis({ transactions }: { transactions: Transaction[]
   const formatCurrency = (value: number) => `Rp ${new Intl.NumberFormat('id-ID').format(value)}`;
 
   const renderDonutChart = (data: { name: string; value: number }[], title: string) => (
-    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
-      <h2 className="text-lg font-semibold text-gray-800 mb-6">{title}</h2>
+    <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
+      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-6">{title}</h2>
       <div className="h-[350px] sm:h-[300px] w-full">
         {data.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
@@ -69,6 +69,7 @@ export default function Analysis({ transactions }: { transactions: Transaction[]
                 outerRadius={90}
                 paddingAngle={5}
                 dataKey="value"
+                stroke="none"
               >
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -76,7 +77,14 @@ export default function Analysis({ transactions }: { transactions: Transaction[]
               </Pie>
               <Tooltip 
                 formatter={(value: number) => formatCurrency(value)} 
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
+                contentStyle={{ 
+                  borderRadius: '12px', 
+                  border: 'none', 
+                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                  backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+                  color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937'
+                }} 
+                itemStyle={{ color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937' }}
               />
               <Legend 
                 layout="horizontal" 
@@ -88,7 +96,7 @@ export default function Analysis({ transactions }: { transactions: Transaction[]
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-full flex items-center justify-center text-gray-400">Belum ada data</div>
+          <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-500">Belum ada data</div>
         )}
       </div>
     </div>
@@ -97,11 +105,11 @@ export default function Analysis({ transactions }: { transactions: Transaction[]
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 font-sans">Analisis Keuangan</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Analisis Keuangan</h1>
         <select 
           value={format(selectedMonth, 'yyyy-MM')} 
           onChange={(e) => setSelectedMonth(parseISO(e.target.value + '-01'))}
-          className="w-full sm:w-auto p-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full sm:w-auto p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100 transition-colors duration-300"
         >
           {months.map(month => (
             <option key={format(month, 'yyyy-MM')} value={format(month, 'yyyy-MM')}>
@@ -112,15 +120,38 @@ export default function Analysis({ transactions }: { transactions: Transaction[]
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800 mb-6">Pemasukan vs Pengeluaran</h2>
+        <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-6">Pemasukan vs Pengeluaran</h2>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={incomeExpenseData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={(val) => `Rp${val/1000}k`} axisLine={false} tickLine={false} fontSize={12} />
-                <Tooltip formatter={(value: number) => formatCurrency(value)} cursor={{ fill: 'transparent' }} />
+              <BarChart data={incomeExpenseData} margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563' }} />
+                <YAxis 
+                  width={60}
+                  tickFormatter={(val) => {
+                    if (val >= 1000000000) return `Rp${val / 1000000000}M`;
+                    if (val >= 1000000) return `Rp${val / 1000000}jt`;
+                    if (val >= 1000) return `Rp${val / 1000}k`;
+                    return `Rp${val}`;
+                  }} 
+                  axisLine={false} 
+                  tickLine={false} 
+                  fontSize={12} 
+                  tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563' }} 
+                />
+                <Tooltip 
+                  formatter={(value: number) => formatCurrency(value)} 
+                  cursor={{ fill: 'transparent' }} 
+                  contentStyle={{ 
+                    borderRadius: '12px', 
+                    border: 'none', 
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                    backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+                    color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937'
+                  }}
+                  itemStyle={{ color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937' }}
+                />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
                   {incomeExpenseData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : '#ef4444'} />

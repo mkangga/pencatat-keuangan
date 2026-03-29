@@ -190,28 +190,28 @@ export default function Goals({ user }: { user: User }) {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6 font-sans">Masa Depan (Tabungan)</h1>
+      <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 font-sans">Masa Depan (Tabungan)</h1>
       
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
-        <h2 className="text-lg font-semibold mb-4 text-gray-800">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-8 transition-colors duration-300">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
           {editingGoal ? 'Edit Target Tabungan' : 'Buat Target Baru'}
         </h2>
         <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nama Target</label>
-            <input type="text" maxLength={100} value={name} onChange={e => setName(e.target.value)} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Contoh: Beli Motor" required />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Nama Target</label>
+            <input type="text" maxLength={100} value={name} onChange={e => setName(e.target.value)} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300" placeholder="Contoh: Beli Motor" required />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Target Dana (Rp)</label>
-            <input type="text" inputMode="numeric" value={target} onChange={handleTargetChange} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" required />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Target Dana (Rp)</label>
+            <input type="text" inputMode="numeric" value={target} onChange={handleTargetChange} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300" placeholder="0" required />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Saldo Saat Ini (Rp)</label>
-            <input type="text" inputMode="numeric" value={current} onChange={handleCurrentChange} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Saldo Saat Ini (Rp)</label>
+            <input type="text" inputMode="numeric" value={current} onChange={handleCurrentChange} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300" placeholder="0" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Simpan Di</label>
-            <select value={selectedWalletId} onChange={e => setSelectedWalletId(e.target.value)} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Simpan Di</label>
+            <select value={selectedWalletId} onChange={e => setSelectedWalletId(e.target.value)} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300" required>
               <option value="" disabled>Pilih Dompet...</option>
               {wallets.map(w => (
                 <option key={w.id} value={w.id}>{w.name}</option>
@@ -223,7 +223,7 @@ export default function Goals({ user }: { user: User }) {
               {loading ? 'Menyimpan...' : editingGoal ? 'Update Target' : 'Buat Target'}
             </button>
             {editingGoal && (
-              <button type="button" onClick={cancelEdit} className="bg-gray-100 text-gray-600 px-8 py-2 rounded-xl h-[42px] hover:bg-gray-200 font-medium transition-colors">
+              <button type="button" onClick={cancelEdit} className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-8 py-2 rounded-xl h-[42px] hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors">
                 Batal
               </button>
             )}
@@ -238,32 +238,32 @@ export default function Goals({ user }: { user: User }) {
           const wallet = wallets.find(w => w.id === goal.walletId);
 
           return (
-            <div key={goal.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow group relative">
+            <div key={goal.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-300 group relative">
               <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => startEdit(goal)} className="p-2 text-gray-400 hover:text-blue-500 transition-colors">
+                <button onClick={() => startEdit(goal)} className="p-2 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
                   <Edit2 size={18} />
                 </button>
-                <button onClick={() => setDeleteId(goal.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                <button onClick={() => setDeleteId(goal.id)} className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">
                   <Trash2 size={18} />
                 </button>
               </div>
               <div className="flex justify-between items-start mb-2 pr-16">
                 <div>
-                  <h3 className="font-bold text-lg text-gray-800">{goal.name}</h3>
+                  <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100">{goal.name}</h3>
                   {wallet && (
-                    <span className="flex items-center gap-1 text-xs text-blue-500 font-medium mt-1">
+                    <span className="flex items-center gap-1 text-xs text-blue-500 dark:text-blue-400 font-medium mt-1">
                       <WalletIcon size={12} />
                       {wallet.name}
                     </span>
                   )}
                 </div>
-                <span className="text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">{progress}%</span>
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-lg">{progress}%</span>
               </div>
-              <div className="w-full bg-gray-100 rounded-full h-3 mb-4 overflow-hidden">
+              <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-3 mb-4 overflow-hidden">
                 <div className="bg-blue-500 h-3 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
               </div>
-              <div className="flex justify-between text-sm text-gray-500 mb-6">
-                <span className="font-medium text-gray-700">Terkumpul: {formatCurrency(goal.currentAmount)}</span>
+              <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-6">
+                <span className="font-medium text-gray-700 dark:text-gray-300">Terkumpul: {formatCurrency(goal.currentAmount)}</span>
                 <span>Target: {formatCurrency(goal.targetAmount)}</span>
               </div>
               
@@ -277,13 +277,13 @@ export default function Goals({ user }: { user: User }) {
                       placeholder="Jumlah (Rp)..." 
                       value={progressAmount}
                       onChange={handleProgressChange}
-                      className="w-full px-4 py-2 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-900/40 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300"
                     />
                     <select 
                       value={progressWalletId} 
                       required
                       onChange={e => setProgressWalletId(e.target.value)}
-                      className="w-full px-4 py-2 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-900/40 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm text-gray-800 dark:text-gray-100 transition-colors duration-300"
                     >
                       <option value="" disabled>Pilih Dompet...</option>
                       {wallets.map(w => (
@@ -291,7 +291,7 @@ export default function Goals({ user }: { user: User }) {
                       ))}
                     </select>
                   </div>
-                  <p className="text-[10px] text-gray-500">* Saldo dompet akan bertambah otomatis.</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">* Saldo dompet akan bertambah otomatis.</p>
                   <div className="flex gap-2">
                     <button 
                       onClick={() => handleAddProgress(goal)}
@@ -302,21 +302,21 @@ export default function Goals({ user }: { user: User }) {
                     </button>
                     <button 
                       onClick={() => { setAddingProgressId(null); setProgressAmount(''); setProgressWalletId(''); }}
-                      className="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                      className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
                       Batal
                     </button>
                   </div>
                 </div>
               ) : (
-                <button onClick={() => { setAddingProgressId(goal.id); setProgressWalletId(goal.walletId || ''); }} className="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl transition-colors border border-gray-200">
+                <button onClick={() => { setAddingProgressId(goal.id); setProgressWalletId(goal.walletId || ''); }} className="w-full py-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl transition-colors border border-gray-200 dark:border-gray-700">
                   + Tambah Tabungan
                 </button>
               )}
             </div>
           );
         })}
-        {goals.length === 0 && <p className="text-gray-500 col-span-2 text-center py-8">Belum ada target tabungan.</p>}
+        {goals.length === 0 && <p className="text-gray-500 dark:text-gray-400 col-span-2 text-center py-8">Belum ada target tabungan.</p>}
       </div>
       <ConfirmModal
         isOpen={!!deleteId}

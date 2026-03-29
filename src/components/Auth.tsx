@@ -14,16 +14,16 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
+      <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-xl transition-colors duration-300">
         <div className="flex flex-col items-center">
-          <div className="h-16 w-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
+          <div className="h-16 w-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-4">
             <Wallet size={32} />
           </div>
-          <h2 className="text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
             CatatUang
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
             Masuk untuk mengelola keuangan pribadi Anda
           </p>
         </div>
@@ -40,8 +40,8 @@ export default function Auth() {
             Masuk dengan Google
           </button>
         </div>
-        <footer className="mt-12 pt-8 text-center text-sm text-gray-500 border-t border-gray-100">
-          built by <a href="https://mka.my.id" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline font-medium">MKA</a>
+        <footer className="mt-12 pt-8 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
+          built by <a href="https://mka.my.id" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">MKA</a>
         </footer>
       </div>
     </div>

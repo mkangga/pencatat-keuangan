@@ -20,12 +20,15 @@ import Categories from './Categories';
 import { BellRing } from 'lucide-react';
 import { MobileDrawer } from './MobileDrawer';
 import BottomNav from './BottomNav';
+import { isToday, isSameMonth, parseISO } from 'date-fns';
 
 interface DashboardProps {
   user: User;
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
 }
 
-export default function Dashboard({ user }: DashboardProps) {
+export default function Dashboard({ user, isDarkMode, toggleDarkMode }: DashboardProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -115,6 +118,14 @@ export default function Dashboard({ user }: DashboardProps) {
   const incomeTransactions = searchedTransactions.filter(t => t.type === 'income');
   const expenseTransactions = searchedTransactions.filter(t => t.type === 'expense');
 
+  const now = new Date();
+
+  const incomeToday = incomeTransactions.filter(t => isToday(parseISO(t.date))).reduce((acc, curr) => acc + curr.amount, 0);
+  const expenseToday = expenseTransactions.filter(t => isToday(parseISO(t.date))).reduce((acc, curr) => acc + curr.amount, 0);
+
+  const incomeMonth = incomeTransactions.filter(t => isSameMonth(parseISO(t.date), now)).reduce((acc, curr) => acc + curr.amount, 0);
+  const expenseMonth = expenseTransactions.filter(t => isSameMonth(parseISO(t.date), now)).reduce((acc, curr) => acc + curr.amount, 0);
+
   const totalIncome = incomeTransactions.reduce((acc, curr) => acc + curr.amount, 0);
   const totalExpense = expenseTransactions.reduce((acc, curr) => acc + curr.amount, 0);
   const balance = totalIncome - totalExpense;
@@ -143,21 +154,21 @@ export default function Dashboard({ user }: DashboardProps) {
   };
 
   const renderFilters = () => (
-    <div className="flex flex-wrap gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+    <div className="flex flex-wrap gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
       <div>
-        <label className="block text-xs text-gray-500 mb-1">Dari Tanggal</label>
-        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" />
+        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Dari Tanggal</label>
+        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100" />
       </div>
       <div>
-        <label className="block text-xs text-gray-500 mb-1">Sampai Tanggal</label>
-        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" />
+        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sampai Tanggal</label>
+        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100" />
       </div>
       <div>
-        <label className="block text-xs text-gray-500 mb-1">Kategori</label>
-        <input type="text" placeholder="Semua kategori..." value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" />
+        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Kategori</label>
+        <input type="text" placeholder="Semua kategori..." value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" />
       </div>
       <div className="flex items-end">
-        <button onClick={() => { setStartDate(''); setEndDate(''); setFilterCategory(''); }} className="px-4 py-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Reset Filter</button>
+        <button onClick={() => { setStartDate(''); setEndDate(''); setFilterCategory(''); }} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">Reset Filter</button>
       </div>
     </div>
   );
@@ -168,8 +179,11 @@ export default function Dashboard({ user }: DashboardProps) {
     setIsUpdatingProfile(true);
     try {
       await updateProfile(user, { displayName: newName });
+      // Update the local user object so the Header reflects the change immediately without reloading
+      if (user) {
+        (user as any).displayName = newName;
+      }
       alert('Profil berhasil diperbarui!');
-      window.location.reload();
     } catch (error) {
       console.error(error);
       alert('Gagal memperbarui profil');
@@ -179,9 +193,9 @@ export default function Dashboard({ user }: DashboardProps) {
   };
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
-      <Sidebar user={user} className={`hidden md:flex transition-all duration-300 h-full ${isSidebarCollapsed ? 'w-20' : 'w-64'}`} isCollapsed={isSidebarCollapsed} />
-      <MobileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} user={user} />
+    <div className="flex h-screen bg-[#f8fafc] dark:bg-gray-900 overflow-hidden transition-colors duration-300">
+      <Sidebar user={user} className={`hidden md:flex transition-all duration-300 h-full ${isSidebarCollapsed ? 'w-20' : 'w-64'}`} isCollapsed={isSidebarCollapsed} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+      <MobileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} user={user} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header 
@@ -194,6 +208,8 @@ export default function Dashboard({ user }: DashboardProps) {
           onToggleDrawer={() => setIsDrawerOpen(true)}
           onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           isSidebarCollapsed={isSidebarCollapsed}
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
         />
         
         <main className="flex-1 overflow-y-auto p-6 lg:p-8 pb-24">
@@ -201,29 +217,35 @@ export default function Dashboard({ user }: DashboardProps) {
             <Route path="/" element={
               <div className="max-w-7xl mx-auto space-y-8">
                 {showReminder && (
-                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-start gap-3">
-                    <div className="bg-blue-100 text-blue-600 p-2 rounded-full mt-0.5">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40 rounded-2xl p-4 flex items-start gap-3 transition-colors duration-300">
+                    <div className="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 p-2 rounded-full mt-0.5">
                       <BellRing size={18} />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-blue-800">Pengingat Harian</h4>
-                      <p className="text-sm text-blue-600 mt-1">Anda belum mencatat transaksi apapun dalam 24 jam terakhir. Yuk catat pengeluaran atau pemasukan Anda hari ini!</p>
+                      <h4 className="font-semibold text-blue-800 dark:text-blue-300">Pengingat Harian</h4>
+                      <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">Anda belum mencatat transaksi apapun dalam 24 jam terakhir. Yuk catat pengeluaran atau pemasukan Anda hari ini!</p>
                     </div>
                   </div>
                 )}
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-800 mb-6 font-sans">Dashboard Keuangan</h1>
-                  <SummaryCards income={totalIncome} expense={totalExpense} balance={balance} />
+                  <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 font-sans">Dashboard Keuangan</h1>
+                  <SummaryCards 
+                    incomeToday={incomeToday} 
+                    expenseToday={expenseToday} 
+                    incomeMonth={incomeMonth} 
+                    expenseMonth={expenseMonth} 
+                    balance={balance} 
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Pemasukan Terakhir</h2>
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Pemasukan Terakhir</h2>
                     <TransactionList transactions={incomeTransactions.slice(0, 5)} type="income" onEdit={openEditModal} />
                   </div>
                   
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Pengeluaran Terakhir</h2>
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Pengeluaran Terakhir</h2>
                     <TransactionList transactions={expenseTransactions.slice(0, 5)} type="expense" onEdit={openEditModal} />
                   </div>
                 </div>
@@ -231,18 +253,18 @@ export default function Dashboard({ user }: DashboardProps) {
             } />
             <Route path="/uang-masuk" element={
               <div className="max-w-7xl mx-auto space-y-6">
-                <h1 className="text-2xl font-bold text-gray-800 font-sans">Semua Pemasukan</h1>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Semua Pemasukan</h1>
                 {renderFilters()}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
                   <TransactionList transactions={applyFilters(incomeTransactions)} type="income" onEdit={openEditModal} />
                 </div>
               </div>
             } />
             <Route path="/uang-keluar" element={
               <div className="max-w-7xl mx-auto space-y-6">
-                <h1 className="text-2xl font-bold text-gray-800 font-sans">Semua Pengeluaran</h1>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Semua Pengeluaran</h1>
                 {renderFilters()}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
                   <TransactionList transactions={applyFilters(expenseTransactions)} type="expense" onEdit={openEditModal} />
                 </div>
               </div>
@@ -256,8 +278,8 @@ export default function Dashboard({ user }: DashboardProps) {
             <Route path="/pengaturan" element={<Settings user={user} />} />
             <Route path="/profil" element={
               <div className="max-w-7xl mx-auto space-y-8">
-                <h1 className="text-2xl font-bold text-gray-800 mb-6 font-sans">Profil Pengguna</h1>
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex flex-col md:flex-row items-start gap-8">
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 font-sans">Profil Pengguna</h1>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 flex flex-col md:flex-row items-start gap-8 transition-colors duration-300">
                   <div className="flex flex-col items-center gap-4">
                     <img 
                       src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'User'}&background=10b981&color=fff`} 
@@ -265,23 +287,23 @@ export default function Dashboard({ user }: DashboardProps) {
                       className="w-32 h-32 rounded-full shadow-md" 
                       referrerPolicy="no-referrer" 
                     />
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300">
                       Akun Aktif
                     </span>
                   </div>
                   <div className="flex-1 w-full">
                     <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input type="email" value={user.email || ''} disabled className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed" />
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Email</label>
+                        <input type="email" value={user.email || ''} disabled className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 cursor-not-allowed" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nama Panggilan</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Nama Panggilan</label>
                         <input 
                           type="text" 
                           value={newName} 
                           onChange={(e) => setNewName(e.target.value)} 
-                          className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all" 
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-gray-800 dark:text-gray-100" 
                           required 
                         />
                       </div>
@@ -299,8 +321,8 @@ export default function Dashboard({ user }: DashboardProps) {
             } />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-          <footer className="mt-12 py-8 text-center text-sm text-gray-500 border-t border-gray-100">
-            built by <a href="https://mka.my.id" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline font-medium">MKA</a>
+          <footer className="mt-12 py-8 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 transition-colors duration-300">
+            built by <a href="https://mka.my.id" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">MKA</a>
           </footer>
         </main>
         <BottomNav />
