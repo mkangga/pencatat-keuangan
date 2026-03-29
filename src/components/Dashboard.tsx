@@ -180,7 +180,7 @@ export default function Dashboard({ user }: DashboardProps) {
 
   return (
     <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
-      <Sidebar user={user} className={`hidden md:flex transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`} isCollapsed={isSidebarCollapsed} />
+      <Sidebar user={user} className={`hidden md:flex transition-all duration-300 h-full ${isSidebarCollapsed ? 'w-20' : 'w-64'}`} isCollapsed={isSidebarCollapsed} />
       <MobileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} user={user} />
       
       <div className="flex-1 flex flex-col overflow-hidden">

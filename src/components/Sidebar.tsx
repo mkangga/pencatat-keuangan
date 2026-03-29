@@ -37,7 +37,7 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
   ];
 
   return (
-    <aside className={`bg-white border-r border-gray-100 flex-shrink-0 flex flex-col h-full ${className}`}>
+    <aside className={`bg-white border-r border-gray-100 flex-shrink-0 flex flex-col h-full min-h-0 ${className}`}>
       <div className={`p-6 flex items-center gap-3 border-b border-gray-50 ${isCollapsed ? 'justify-center' : ''}`}>
         <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex-shrink-0 flex items-center justify-center font-bold text-sm">
           {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'A'}
@@ -45,7 +45,7 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
         {!isCollapsed && <span className="font-semibold text-gray-800 truncate">{user.displayName || 'User'}</span>}
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 pb-20">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -71,7 +71,7 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-50">
+      <div className="p-4 border-t border-gray-50 pb-8 md:pb-4">
         <button
           onClick={() => { handleLogout(); onItemClick?.(); }}
           title={isCollapsed ? "Logout" : ""}

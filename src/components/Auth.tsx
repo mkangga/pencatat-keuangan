@@ -21,7 +21,7 @@ export default function Auth() {
             <Wallet size={32} />
           </div>
           <h2 className="text-center text-3xl font-extrabold text-gray-900">
-            Pengelola Keuangan
+            CatatUang
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Masuk untuk mengelola keuangan pribadi Anda
@@ -40,6 +40,9 @@ export default function Auth() {
             Masuk dengan Google
           </button>
         </div>
+        <footer className="mt-12 pt-8 text-center text-sm text-gray-500 border-t border-gray-100">
+          built by <a href="https://mka.my.id" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline font-medium">MKA</a>
+        </footer>
       </div>
     </div>
   );

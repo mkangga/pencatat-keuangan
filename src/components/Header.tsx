@@ -54,9 +54,12 @@ export default function Header({
           <SidebarIcon size={20} className={isSidebarCollapsed ? 'rotate-180' : ''} />
         </button>
         <div className="flex flex-col">
-          <h1 className="text-lg font-bold text-emerald-600">
-            CatatUang
-          </h1>
+          <div className="flex items-baseline gap-1">
+            <h1 className="text-lg font-bold text-emerald-600">
+              CatatUang
+            </h1>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">by MKA</span>
+          </div>
           <h2 className="text-sm font-semibold text-gray-800 hidden lg:block">
             Selamat Datang, {user.displayName?.split(' ')[0] || 'User'}!
           </h2>

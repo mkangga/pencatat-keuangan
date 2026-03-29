@@ -12,7 +12,7 @@ export function MobileDrawer({ isOpen, onClose, user }: MobileDrawerProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <div className="fixed inset-0 z-[60] flex">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="relative w-64 bg-white h-full shadow-lg flex flex-col">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between md:hidden">
@@ -21,7 +21,7 @@ export function MobileDrawer({ isOpen, onClose, user }: MobileDrawerProps) {
             <X size={24} />
           </button>
         </div>
-        <Sidebar user={user} onItemClick={onClose} className="flex-1" />
+        <Sidebar user={user} onItemClick={onClose} className="flex-1 min-h-0 !h-auto" />
       </div>
     </div>
   );
