@@ -5,47 +5,82 @@
       "description": "A financial transaction representing either income or expense.",
       "type": "object",
       "properties": {
-        "userId": {
-          "type": "string",
-          "description": "The ID of the user who owns this transaction."
-        },
-        "type": {
-          "type": "string",
-          "enum": ["income", "expense"],
-          "description": "The type of transaction."
-        },
-        "amount": {
-          "type": "number",
-          "description": "The monetary amount of the transaction."
-        },
-        "description": {
-          "type": "string",
-          "description": "A brief description of the transaction."
-        },
-        "date": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The date the transaction occurred."
-        },
-        "category": {
-          "type": "string",
-          "description": "The category of the transaction."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The time the transaction record was created."
-        }
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["income", "expense"] },
+        "amount": { "type": "number" },
+        "description": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "category": { "type": "string" },
+        "walletId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "type", "amount", "description", "date", "createdAt"]
+      "required": ["userId", "type", "amount", "description", "date", "walletId", "createdAt"]
+    },
+    "Wallet": {
+      "title": "Wallet",
+      "description": "A user's wallet or bank account.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "balance": { "type": "number" },
+        "type": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "createdAt"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "A category for transactions.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["income", "expense"] },
+        "icon": { "type": "string" },
+        "color": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "type", "createdAt"]
+    },
+    "Debt": {
+      "title": "Debt",
+      "description": "A debt or receivable record.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["payable", "receivable"] },
+        "person": { "type": "string" },
+        "amount": { "type": "number" },
+        "description": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["unpaid", "paid"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "amount", "description", "status", "createdAt"]
+    },
+    "Goal": {
+      "title": "Goal",
+      "description": "A financial goal for the future.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "targetAmount": { "type": "number" },
+        "currentAmount": { "type": "number" },
+        "deadline": { "type": "string", "format": "date" },
+        "walletId": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "targetAmount", "currentAmount", "walletId", "createdAt"]
     }
   },
   "firestore": {
-    "transactions/{transactionId}": {
-      "schema": {
-        "$ref": "#/entities/Transaction"
-      },
-      "description": "Stores user financial transactions."
-    }
+    "transactions/{transactionId}": { "schema": { "$ref": "#/entities/Transaction" }, "description": "User transactions." },
+    "wallets/{walletId}": { "schema": { "$ref": "#/entities/Wallet" }, "description": "User wallets." },
+    "categories/{categoryId}": { "schema": { "$ref": "#/entities/Category" }, "description": "User categories." },
+    "debts/{debtId}": { "schema": { "$ref": "#/entities/Debt" }, "description": "User debts/receivables." },
+    "goals/{goalId}": { "schema": { "$ref": "#/entities/Goal" }, "description": "User financial goals." }
   }
 }
