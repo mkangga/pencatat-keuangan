@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { User } from 'firebase/auth';
 import { auth } from '../firebase';
 import { NavLink } from 'react-router-dom';
 import { 
   Home, User as UserIcon, ArrowUpRight, ArrowDownRight, 
   ClipboardList, CreditCard, TrendingUp, Settings, LogOut, PieChart, Wallet, Tags,
-  Moon, Sun
+  Moon, Sun, AlertTriangle
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -17,6 +18,8 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ user, className = '', onItemClick, isCollapsed = false, isDarkMode, toggleDarkMode }: SidebarProps) {
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
   const handleLogout = async () => {
     try {
       await auth.signOut();
@@ -86,7 +89,7 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
           </button>
         )}
         <button
-          onClick={() => { handleLogout(); onItemClick?.(); }}
+          onClick={() => setIsLogoutModalOpen(true)}
           title={isCollapsed ? "Logout" : ""}
           className={`flex items-center gap-3 px-4 py-3 w-full rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-colors ${isCollapsed ? 'justify-center px-0' : ''}`}
         >
@@ -94,6 +97,39 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
           {!isCollapsed && 'Logout'}
         </button>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 mx-auto mb-4">
+              <AlertTriangle className="text-red-600 dark:text-red-400" size={24} />
+            </div>
+            <h3 className="text-lg font-bold text-center text-gray-900 dark:text-gray-100 mb-2">Konfirmasi Logout</h3>
+            <p className="text-sm text-center text-gray-500 dark:text-gray-400 mb-6">
+              Apakah Anda yakin ingin keluar dari aplikasi? Anda harus login kembali untuk mencatat keuangan.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsLogoutModalOpen(false)}
+                className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  setIsLogoutModalOpen(false);
+                  handleLogout();
+                  onItemClick?.();
+                }}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors"
+              >
+                Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
