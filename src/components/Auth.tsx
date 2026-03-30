@@ -1,8 +1,13 @@
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
-import { Wallet } from 'lucide-react';
+import { Wallet, Moon, Sun } from 'lucide-react';
 
-export default function Auth() {
+interface AuthProps {
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
+}
+
+export default function Auth({ isDarkMode, toggleDarkMode }: AuthProps) {
   const handleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
@@ -14,7 +19,15 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300 relative">
+      <button
+        onClick={toggleDarkMode}
+        className="absolute top-6 right-6 p-2 rounded-full bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm border border-gray-200 dark:border-gray-700 transition-colors"
+        aria-label="Toggle dark mode"
+      >
+        {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+      </button>
+
       <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-xl transition-colors duration-300">
         <div className="flex flex-col items-center">
           <div className="h-16 w-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-4">

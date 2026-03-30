@@ -46,7 +46,7 @@ export default function App() {
         {user ? (
           <Dashboard user={user} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
         ) : (
-          <Auth />
+          <Auth isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
         )}
       </div>
     </BrowserRouter>
