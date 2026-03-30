@@ -337,6 +337,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
           wallets={wallets}
           categories={categories}
           editingTransaction={editingTransaction}
+          transactions={transactions}
         />
       )}
 

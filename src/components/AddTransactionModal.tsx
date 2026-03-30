@@ -1,4 +1,4 @@
-import { useState, FormEvent, useEffect, ChangeEvent } from 'react';
+import { useState, FormEvent, useEffect, ChangeEvent, useMemo } from 'react';
 import { User } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -14,6 +14,7 @@ interface AddTransactionModalProps {
   wallets: Wallet[];
   categories: Category[];
   editingTransaction?: Transaction | null;
+  transactions: Transaction[];
 }
 
 export default function AddTransactionModal({ 
@@ -23,7 +24,8 @@ export default function AddTransactionModal({
   user, 
   wallets, 
   categories,
-  editingTransaction 
+  editingTransaction,
+  transactions
 }: AddTransactionModalProps) {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -33,6 +35,7 @@ export default function AddTransactionModal({
   const [category, setCategory] = useState('');
   const [walletId, setWalletId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const navigate = useNavigate();
 
   const formatNominal = (value: string) => {
@@ -52,8 +55,25 @@ export default function AddTransactionModal({
 
   const filteredCategories = categories.filter(c => c.type === type);
 
+  const topDescriptions = useMemo(() => {
+    const counts: Record<string, number> = {};
+    transactions.filter(t => t.type === type).forEach(t => {
+      if (t.description) {
+        const desc = t.description.trim();
+        if (desc) {
+          counts[desc] = (counts[desc] || 0) + 1;
+        }
+      }
+    });
+    
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(entry => entry[0]);
+  }, [transactions, type]);
+
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !hasInitialized) {
       if (editingTransaction) {
         const txDate = new Date(editingTransaction.date);
         setAmount(formatNominal(editingTransaction.amount.toString()));
@@ -69,11 +89,43 @@ export default function AddTransactionModal({
         setNotes('');
         setDate(new Date().toISOString().split('T')[0]);
         setTime(new Date().toTimeString().split(' ')[0].slice(0, 5));
-        setCategory(filteredCategories.length > 0 ? filteredCategories[0].name : '');
-        setWalletId(wallets.length > 0 ? wallets[0].id : '');
+        
+        // Calculate most frequent category
+        const catCounts: Record<string, number> = {};
+        transactions.filter(t => t.type === type).forEach(t => {
+          if (t.category) catCounts[t.category] = (catCounts[t.category] || 0) + 1;
+        });
+        let maxCatCount = 0;
+        let mostFreqCat = filteredCategories.length > 0 ? filteredCategories[0].name : '';
+        for (const catName in catCounts) {
+          if (catCounts[catName] > maxCatCount && filteredCategories.some(c => c.name === catName)) {
+            maxCatCount = catCounts[catName];
+            mostFreqCat = catName;
+          }
+        }
+
+        // Calculate most frequent wallet
+        const walCounts: Record<string, number> = {};
+        transactions.forEach(t => {
+          if (t.walletId) walCounts[t.walletId] = (walCounts[t.walletId] || 0) + 1;
+        });
+        let maxWalCount = 0;
+        let mostFreqWal = wallets.length > 0 ? wallets[0].id : '';
+        for (const wId in walCounts) {
+          if (walCounts[wId] > maxWalCount && wallets.some(w => w.id === wId)) {
+            maxWalCount = walCounts[wId];
+            mostFreqWal = wId;
+          }
+        }
+
+        setCategory(mostFreqCat);
+        setWalletId(mostFreqWal);
       }
+      setHasInitialized(true);
+    } else if (!isOpen) {
+      setHasInitialized(false);
     }
-  }, [isOpen, type, wallets, categories, editingTransaction]);
+  }, [isOpen, hasInitialized, type, wallets, filteredCategories, editingTransaction, transactions]);
 
   if (!isOpen) return null;
 
@@ -229,6 +281,20 @@ export default function AddTransactionModal({
               className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="Contoh: Gaji bulan ini"
             />
+            {topDescriptions.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {topDescriptions.map((desc, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setDescription(desc)}
+                    className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full hover:bg-emerald-100 hover:text-emerald-700 dark:hover:bg-emerald-900/50 dark:hover:text-emerald-400 transition-colors border border-transparent hover:border-emerald-200 dark:hover:border-emerald-800"
+                  >
+                    {desc}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
