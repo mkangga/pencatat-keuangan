@@ -36,6 +36,7 @@ export default function AddTransactionModal({
   const [walletId, setWalletId] = useState('');
   const [loading, setLoading] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const navigate = useNavigate();
 
   const formatNominal = (value: string) => {
@@ -71,6 +72,40 @@ export default function AddTransactionModal({
       .slice(0, 6)
       .map(entry => entry[0]);
   }, [transactions, type]);
+
+  const allUniqueDescriptions = useMemo(() => {
+    const descSet = new Set<string>();
+    transactions.filter(t => t.type === type).forEach(t => {
+      if (t.description) descSet.add(t.description.trim());
+    });
+    return Array.from(descSet);
+  }, [transactions, type]);
+
+  const filteredSuggestions = useMemo(() => {
+    if (!description) return [];
+    return allUniqueDescriptions
+      .filter(desc => desc.toLowerCase().includes(description.toLowerCase()) && desc !== description)
+      .slice(0, 5);
+  }, [description, allUniqueDescriptions]);
+
+  const handleDescriptionChange = (newDesc: string) => {
+    setDescription(newDesc);
+    
+    // Find the most recent transaction with this exact description
+    const pastTx = transactions.find(t => 
+      t.type === type && 
+      t.description?.toLowerCase() === newDesc.toLowerCase()
+    );
+    
+    if (pastTx) {
+      if (pastTx.category && filteredCategories.some(c => c.name === pastTx.category)) {
+        setCategory(pastTx.category);
+      }
+      if (pastTx.walletId && wallets.some(w => w.id === pastTx.walletId)) {
+        setWalletId(pastTx.walletId);
+      }
+    }
+  };
 
   useEffect(() => {
     if (isOpen && !hasInitialized) {
@@ -272,22 +307,45 @@ export default function AddTransactionModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Judul</label>
-            <input
-              type="text"
-              required
-              maxLength={100}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-              placeholder="Contoh: Gaji bulan ini"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                required
+                maxLength={100}
+                value={description}
+                onChange={(e) => {
+                  handleDescriptionChange(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder="Contoh: Gaji bulan ini"
+              />
+              {showSuggestions && filteredSuggestions.length > 0 && (
+                <ul className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-auto">
+                  {filteredSuggestions.map((suggestion, idx) => (
+                    <li
+                      key={idx}
+                      onClick={() => {
+                        handleDescriptionChange(suggestion);
+                        setShowSuggestions(false);
+                      }}
+                      className="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer transition-colors"
+                    >
+                      {suggestion}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             {topDescriptions.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {topDescriptions.map((desc, idx) => (
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => setDescription(desc)}
+                    onClick={() => handleDescriptionChange(desc)}
                     className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full hover:bg-emerald-100 hover:text-emerald-700 dark:hover:bg-emerald-900/50 dark:hover:text-emerald-400 transition-colors border border-transparent hover:border-emerald-200 dark:hover:border-emerald-800"
                   >
                     {desc}
