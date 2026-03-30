@@ -69,26 +69,41 @@ export default function Goals({ user }: { user: User }) {
     setLoading(true);
     try {
       if (editingGoal) {
-        await updateDoc(doc(db, 'goals', editingGoal.id), {
+        updateDoc(doc(db, 'goals', editingGoal.id), {
           name,
           targetAmount: numericTarget,
           currentAmount: numericCurrent,
           walletId: selectedWalletId
         });
+
+        const diff = numericCurrent - editingGoal.currentAmount;
+        if (diff !== 0) {
+          addDoc(collection(db, 'transactions'), {
+            userId: user.uid,
+            type: diff > 0 ? 'income' : 'expense',
+            amount: Math.abs(diff),
+            description: `Penyesuaian Tabungan: ${name}`,
+            category: 'Tabungan',
+            walletId: selectedWalletId,
+            date: new Date(),
+            createdAt: serverTimestamp()
+          });
+        }
         setEditingGoal(null);
       } else {
-        const goalRef = await addDoc(collection(db, 'goals'), {
+        const goalData = {
           userId: user.uid,
           name,
           targetAmount: numericTarget,
           currentAmount: numericCurrent,
           walletId: selectedWalletId,
           createdAt: serverTimestamp()
-        });
+        };
+        addDoc(collection(db, 'goals'), goalData);
 
         // If initial balance is provided and wallet is selected, create a transaction
         if (numericCurrent > 0 && selectedWalletId) {
-          await addDoc(collection(db, 'transactions'), {
+          addDoc(collection(db, 'transactions'), {
             userId: user.uid,
             type: 'income',
             amount: numericCurrent,
@@ -115,7 +130,7 @@ export default function Goals({ user }: { user: User }) {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      await deleteDoc(doc(db, 'goals', deleteId));
+      deleteDoc(doc(db, 'goals', deleteId));
       setDeleteId(null);
     } catch (error) {
       console.error("Error deleting goal: ", error);
@@ -150,7 +165,7 @@ export default function Goals({ user }: { user: User }) {
     setLoading(true);
     try {
       // Update goal amount
-      await updateDoc(doc(db, 'goals', goal.id), {
+      updateDoc(doc(db, 'goals', goal.id), {
         currentAmount: goal.currentAmount + numericAmount
       });
 
@@ -160,7 +175,7 @@ export default function Goals({ user }: { user: User }) {
       setProgressWalletId('');
 
       // Create transaction
-      await addDoc(collection(db, 'transactions'), {
+      addDoc(collection(db, 'transactions'), {
         userId: user.uid,
         type: 'income',
         amount: numericAmount,

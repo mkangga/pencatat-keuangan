@@ -44,7 +44,7 @@ export default function Debts({ user }: { user: User }) {
     if (!numericAmount || !description) return;
     setLoading(true);
     try {
-      await addDoc(collection(db, 'debts'), {
+      addDoc(collection(db, 'debts'), {
         userId: user.uid,
         type,
         amount: numericAmount,
@@ -67,7 +67,7 @@ export default function Debts({ user }: { user: User }) {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      await deleteDoc(doc(db, 'debts', deleteId));
+      deleteDoc(doc(db, 'debts', deleteId));
       setDeleteId(null);
     } catch (error) {
       console.error("Error deleting debt: ", error);
@@ -77,7 +77,7 @@ export default function Debts({ user }: { user: User }) {
 
   const toggleStatus = async (debt: Debt) => {
     try {
-      await updateDoc(doc(db, 'debts', debt.id), {
+      updateDoc(doc(db, 'debts', debt.id), {
         status: debt.status === 'paid' ? 'unpaid' : 'paid'
       });
     } catch (error) {

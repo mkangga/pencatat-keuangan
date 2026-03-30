@@ -26,7 +26,7 @@ export default function Categories({ user }: { user: User }) {
     if (!name.trim()) return;
     setLoading(true);
     try {
-      await addDoc(collection(db, 'categories'), {
+      addDoc(collection(db, 'categories'), {
         userId: user.uid,
         name: name.trim(),
         type,
@@ -44,7 +44,7 @@ export default function Categories({ user }: { user: User }) {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      await deleteDoc(doc(db, 'categories', deleteId));
+      deleteDoc(doc(db, 'categories', deleteId));
       setDeleteId(null);
     } catch (error) {
       console.error("Error deleting category: ", error);

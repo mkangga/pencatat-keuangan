@@ -27,6 +27,7 @@ export default function AddTransactionModal({
 }: AddTransactionModalProps) {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [notes, setNotes] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState(new Date().toTimeString().split(' ')[0].slice(0, 5));
   const [category, setCategory] = useState('');
@@ -57,6 +58,7 @@ export default function AddTransactionModal({
         const txDate = new Date(editingTransaction.date);
         setAmount(formatNominal(editingTransaction.amount.toString()));
         setDescription(editingTransaction.description);
+        setNotes(editingTransaction.notes || '');
         setDate(txDate.toISOString().split('T')[0]);
         setTime(txDate.toTimeString().split(' ')[0].slice(0, 5));
         setCategory(editingTransaction.category || '');
@@ -64,6 +66,7 @@ export default function AddTransactionModal({
       } else {
         setAmount('');
         setDescription('');
+        setNotes('');
         setDate(new Date().toISOString().split('T')[0]);
         setTime(new Date().toTimeString().split(' ')[0].slice(0, 5));
         setCategory(filteredCategories.length > 0 ? filteredCategories[0].name : '');
@@ -90,6 +93,7 @@ export default function AddTransactionModal({
         type,
         amount: numericAmount,
         description,
+        notes,
         date: fullDate,
         updatedAt: serverTimestamp(),
       };
@@ -97,10 +101,10 @@ export default function AddTransactionModal({
       txData.walletId = walletId;
 
       if (editingTransaction) {
-        await updateDoc(doc(db, 'transactions', editingTransaction.id), txData);
+        updateDoc(doc(db, 'transactions', editingTransaction.id), txData);
       } else {
         txData.createdAt = serverTimestamp();
-        await addDoc(collection(db, 'transactions'), txData);
+        addDoc(collection(db, 'transactions'), txData);
       }
       onClose();
     } catch (error) {
@@ -215,7 +219,7 @@ export default function AddTransactionModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Keterangan</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Judul</label>
             <input
               type="text"
               required
@@ -224,6 +228,18 @@ export default function AddTransactionModal({
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="Contoh: Gaji bulan ini"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Deskripsi <span className="text-gray-400 dark:text-gray-500 text-xs font-normal">(Opsional)</span></label>
+            <textarea
+              rows={2}
+              maxLength={250}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none"
+              placeholder="Tambahkan catatan tambahan jika perlu..."
             />
           </div>
 

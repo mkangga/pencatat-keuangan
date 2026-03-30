@@ -29,7 +29,7 @@ export default function TransactionList({ transactions, type, onEdit }: Transact
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      await deleteDoc(doc(db, 'transactions', deleteId));
+      deleteDoc(doc(db, 'transactions', deleteId));
       setDeleteId(null);
     } catch (error) {
       console.error("Error deleting transaction: ", error);
@@ -59,7 +59,10 @@ export default function TransactionList({ transactions, type, onEdit }: Transact
             </div>
             <div>
               <p className="font-medium text-gray-800 dark:text-gray-200 text-sm">{tx.description}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              {tx.notes && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{tx.notes}</p>
+              )}
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
                 {format(new Date(tx.date), 'dd-MM-yyyy HH:mm', { locale: id })}
                 {tx.category && ` - ${tx.category}`}
               </p>

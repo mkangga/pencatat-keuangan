@@ -27,7 +27,10 @@ export default function ActivityLog({ transactions }: ActivityLogProps) {
               <div key={tx.id} className="flex justify-between items-center p-4 border-b border-gray-50 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors">
                 <div>
                   <p className="font-medium text-gray-800 dark:text-gray-100">{tx.description}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {tx.notes && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{tx.notes}</p>
+                  )}
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     {format(new Date(tx.date), 'dd MMMM yyyy', { locale: id })}
                     {tx.category && ` • ${tx.category}`}
                   </p>

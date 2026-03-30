@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent, useMemo } from 'react';
 import { User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Wallet as WalletType, Transaction } from '../types';
 import { Wallet, Trash2 } from 'lucide-react';
@@ -72,14 +72,15 @@ export default function Wallets({ user }: { user: User }) {
     const numericBalance = Number(parseNominal(initialBalance));
     setLoading(true);
     try {
-      const walletRef = await addDoc(collection(db, 'wallets'), {
+      const walletRef = doc(collection(db, 'wallets'));
+      setDoc(walletRef, {
         userId: user.uid,
         name: name.trim(),
         createdAt: serverTimestamp()
       });
 
       if (numericBalance > 0) {
-        await addDoc(collection(db, 'transactions'), {
+        addDoc(collection(db, 'transactions'), {
           userId: user.uid,
           type: 'income',
           amount: numericBalance,
@@ -104,7 +105,7 @@ export default function Wallets({ user }: { user: User }) {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      await deleteDoc(doc(db, 'wallets', deleteId));
+      deleteDoc(doc(db, 'wallets', deleteId));
       setDeleteId(null);
     } catch (error) {
       console.error("Error deleting wallet: ", error);
