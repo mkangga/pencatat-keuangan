@@ -52,6 +52,32 @@ export default function Analysis({ transactions }: { transactions: Transaction[]
     return { expensePieData, incomePieData, incomeExpenseData };
   }, [transactions, selectedMonth]);
 
+  const monthlySummaryData = useMemo(() => {
+    const data = [];
+    for (let i = 11; i >= 0; i--) {
+      const monthDate = subMonths(new Date(), i);
+      const monthName = format(monthDate, 'MMM yy', { locale: id });
+      
+      let income = 0;
+      let expense = 0;
+      
+      transactions.forEach(tx => {
+        if (isSameMonth(parseISO(tx.date), monthDate)) {
+          if (tx.type === 'income') income += tx.amount;
+          else expense += tx.amount;
+        }
+      });
+      
+      data.push({
+        name: monthName,
+        Pemasukan: income,
+        Pengeluaran: expense,
+        Saldo: income - expense
+      });
+    }
+    return data;
+  }, [transactions]);
+
   const formatCurrency = (value: number) => `Rp ${new Intl.NumberFormat('id-ID').format(value)}`;
 
   const renderDonutChart = (data: { name: string; value: number }[], title: string) => (
@@ -120,6 +146,49 @@ export default function Analysis({ transactions }: { transactions: Transaction[]
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300 lg:col-span-2">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-6">Ringkasan Bulanan (1 Tahun Terakhir)</h2>
+          <div className="h-[350px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlySummaryData} margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563', fontSize: 12 }} />
+                <YAxis 
+                  width={60}
+                  tickFormatter={(val) => {
+                    if (val >= 1000000000) return `Rp${val / 1000000000}M`;
+                    if (val >= 1000000) return `Rp${val / 1000000}jt`;
+                    if (val >= 1000) return `Rp${val / 1000}k`;
+                    return `Rp${val}`;
+                  }} 
+                  axisLine={false} 
+                  tickLine={false} 
+                  fontSize={12} 
+                  tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563' }} 
+                />
+                <Tooltip 
+                  formatter={(value: number) => formatCurrency(value)} 
+                  cursor={{ fill: document.documentElement.classList.contains('dark') ? '#374151' : '#f3f4f6' }} 
+                  contentStyle={{ 
+                    borderRadius: '12px', 
+                    border: 'none', 
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                    backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+                    color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937'
+                  }}
+                  itemStyle={{ color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937' }}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px', fontSize: '12px' }}
+                />
+                <Bar dataKey="Pemasukan" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Pengeluaran" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Saldo" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-6">Pemasukan vs Pengeluaran</h2>
           <div className="h-[300px] w-full">

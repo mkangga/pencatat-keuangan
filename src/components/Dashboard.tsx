@@ -57,6 +57,10 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
   // Sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
+  // Sorting state for recent transactions
+  const [incomeSort, setIncomeSort] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
+  const [expenseSort, setExpenseSort] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
+
   useEffect(() => {
     if (!user) return;
 
@@ -129,6 +133,19 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
   const totalIncome = incomeTransactions.reduce((acc, curr) => acc + curr.amount, 0);
   const totalExpense = expenseTransactions.reduce((acc, curr) => acc + curr.amount, 0);
   const balance = totalIncome - totalExpense;
+
+  const sortTransactions = (txs: Transaction[], sortType: string) => {
+    return [...txs].sort((a, b) => {
+      if (sortType === 'date-desc') return new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (sortType === 'date-asc') return new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (sortType === 'amount-desc') return b.amount - a.amount;
+      if (sortType === 'amount-asc') return a.amount - b.amount;
+      return 0;
+    });
+  };
+
+  const sortedIncomeTransactions = sortTransactions(incomeTransactions, incomeSort);
+  const sortedExpenseTransactions = sortTransactions(expenseTransactions, expenseSort);
 
   const openModal = (type: 'income' | 'expense') => {
     setModalType(type);
@@ -240,13 +257,37 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Pemasukan Terakhir</h2>
-                    <TransactionList transactions={incomeTransactions.slice(0, 5)} type="income" onEdit={openEditModal} />
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Pemasukan Terakhir</h2>
+                      <select 
+                        value={incomeSort}
+                        onChange={(e) => setIncomeSort(e.target.value as any)}
+                        className="text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500 text-gray-700 dark:text-gray-300"
+                      >
+                        <option value="date-desc">Terbaru</option>
+                        <option value="date-asc">Terlama</option>
+                        <option value="amount-desc">Tertinggi</option>
+                        <option value="amount-asc">Terendah</option>
+                      </select>
+                    </div>
+                    <TransactionList transactions={sortedIncomeTransactions.slice(0, 5)} type="income" onEdit={openEditModal} />
                   </div>
                   
                   <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Pengeluaran Terakhir</h2>
-                    <TransactionList transactions={expenseTransactions.slice(0, 5)} type="expense" onEdit={openEditModal} />
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Pengeluaran Terakhir</h2>
+                      <select 
+                        value={expenseSort}
+                        onChange={(e) => setExpenseSort(e.target.value as any)}
+                        className="text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500 text-gray-700 dark:text-gray-300"
+                      >
+                        <option value="date-desc">Terbaru</option>
+                        <option value="date-asc">Terlama</option>
+                        <option value="amount-desc">Tertinggi</option>
+                        <option value="amount-asc">Terendah</option>
+                      </select>
+                    </div>
+                    <TransactionList transactions={sortedExpenseTransactions.slice(0, 5)} type="expense" onEdit={openEditModal} />
                   </div>
                 </div>
               </div>
