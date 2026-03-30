@@ -14,12 +14,24 @@ export default function App() {
   });
 
   useEffect(() => {
+    // Fallback timeout in case onAuthStateChanged never fires
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('Firebase auth state check timed out, showing auth screen as fallback.');
+        setLoading(false);
+      }
+    }, 5000);
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
+      clearTimeout(timeout);
     });
-    return () => unsubscribe();
-  }, []);
+    return () => {
+      unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, [loading]);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -34,8 +46,9 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-emerald-500 mb-4"></div>
+        <p className="text-gray-500 dark:text-gray-400 font-medium">Memuat aplikasi...</p>
       </div>
     );
   }

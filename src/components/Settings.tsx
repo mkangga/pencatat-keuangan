@@ -1,11 +1,24 @@
 import { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
-import { collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { NOTIFICATION_KEY, requestNotificationPermission } from '../services/notificationService';
+import { AppUser } from '../types';
+import { ALL_NAV_ITEMS } from './BottomNav';
 
-export default function Settings({ user }: { user: User }) {
+export default function Settings({ user, appUser }: { user: User, appUser: AppUser | null }) {
   const [deleteState, setDeleteState] = useState<'idle' | 'counting' | 'ready' | 'deleting'>('idle');
   const [countdown, setCountdown] = useState(5);
+  const [isNotificationEnabled, setIsNotificationEnabled] = useState(
+    localStorage.getItem(NOTIFICATION_KEY) === 'true'
+  );
+  const [selectedTabs, setSelectedTabs] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (appUser?.bottomNavTabs) {
+      setSelectedTabs(appUser.bottomNavTabs);
+    }
+  }, [appUser]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -16,6 +29,50 @@ export default function Settings({ user }: { user: User }) {
     }
     return () => clearTimeout(timer);
   }, [deleteState, countdown]);
+
+  const handleNotificationToggle = async () => {
+    if (!isNotificationEnabled) {
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        localStorage.setItem(NOTIFICATION_KEY, 'true');
+        setIsNotificationEnabled(true);
+      } else {
+        alert('Izin notifikasi ditolak oleh browser.');
+      }
+    } else {
+      localStorage.setItem(NOTIFICATION_KEY, 'false');
+      setIsNotificationEnabled(false);
+    }
+  };
+
+  const handleTabToggle = async (tabName: string) => {
+    let newTabs = [...selectedTabs];
+    if (newTabs.includes(tabName)) {
+      // Don't allow less than 2 tabs
+      if (newTabs.length <= 2) {
+        alert('Minimal harus ada 2 tab di navigasi bawah.');
+        return;
+      }
+      newTabs = newTabs.filter(t => t !== tabName);
+    } else {
+      // Limit to 5 tabs
+      if (newTabs.length >= 5) {
+        alert('Maksimal 5 tab di navigasi bawah.');
+        return;
+      }
+      newTabs.push(tabName);
+    }
+    
+    setSelectedTabs(newTabs);
+    
+    // Save to Firestore
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, { bottomNavTabs: newTabs });
+    } catch (error) {
+      console.error('Error updating tabs:', error);
+    }
+  };
 
   const handleDeleteClick = () => {
     setDeleteState('counting');
@@ -47,6 +104,7 @@ export default function Settings({ user }: { user: User }) {
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Preferensi Aplikasi</h3>
           <div className="space-y-4">
+            {/* Currency Selection */}
             <div className="flex items-center justify-between p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <div>
                 <p className="font-medium text-gray-800 dark:text-gray-100">Mata Uang</p>
@@ -57,15 +115,63 @@ export default function Settings({ user }: { user: User }) {
                 <option>USD (Dollar)</option>
               </select>
             </div>
+
+            {/* Notification Toggle */}
             <div className="flex items-center justify-between p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <div>
-                <p className="font-medium text-gray-800 dark:text-gray-100">Notifikasi</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Terima pengingat harian</p>
+                <p className="font-medium text-gray-800 dark:text-gray-100">Notifikasi Pengingat</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Ingatkan saya jika belum mencatat selama 24 jam</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" value="" className="sr-only peer" defaultChecked />
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer" 
+                  checked={isNotificationEnabled}
+                  onChange={handleNotificationToggle}
+                />
                 <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 dark:peer-focus:ring-emerald-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
               </label>
+            </div>
+
+            {/* Bottom Nav Customization */}
+            <div className="p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors space-y-4">
+              <div>
+                <p className="font-medium text-gray-800 dark:text-gray-100">Kustomisasi Navigasi Bawah (Mobile Only)</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Pilih maksimal 5 menu untuk ditampilkan di bar bawah</p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {ALL_NAV_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const isSelected = selectedTabs.includes(item.name);
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => handleTabToggle(item.name)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all ${
+                        isSelected
+                          ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400'
+                          : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <Icon size={16} />
+                      {item.name}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedTabs.length > 0 && (
+                <div className="pt-2">
+                  <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Urutan Tampilan:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTabs.map((tab, index) => (
+                      <div key={tab} className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300">
+                        <span className="text-emerald-600 dark:text-emerald-400">{index + 1}</span>
+                        {tab}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

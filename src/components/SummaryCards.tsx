@@ -33,7 +33,7 @@ export default function SummaryCards({ incomeToday, expenseToday, incomeMonth, e
 
       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4 transition-all hover:-translate-y-1 duration-200">
         <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400">
-          <ArrowUp size={24} strokeWidth={2.5} />
+          <ArrowDown size={24} strokeWidth={2.5} />
         </div>
         <div>
           <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1 flex items-center gap-1">
@@ -45,7 +45,7 @@ export default function SummaryCards({ incomeToday, expenseToday, incomeMonth, e
 
       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4 transition-all hover:-translate-y-1 duration-200">
         <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-500 dark:text-red-400">
-          <ArrowDown size={24} strokeWidth={2.5} />
+          <ArrowUp size={24} strokeWidth={2.5} />
         </div>
         <div>
           <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1 flex items-center gap-1">
@@ -57,7 +57,7 @@ export default function SummaryCards({ incomeToday, expenseToday, incomeMonth, e
 
       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4 transition-all hover:-translate-y-1 duration-200">
         <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400">
-          <ArrowUp size={24} strokeWidth={2.5} />
+          <ArrowDown size={24} strokeWidth={2.5} />
         </div>
         <div>
           <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1 flex items-center gap-1">
@@ -69,7 +69,7 @@ export default function SummaryCards({ incomeToday, expenseToday, incomeMonth, e
 
       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4 transition-all hover:-translate-y-1 duration-200">
         <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-500 dark:text-red-400">
-          <ArrowDown size={24} strokeWidth={2.5} />
+          <ArrowUp size={24} strokeWidth={2.5} />
         </div>
         <div>
           <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1 flex items-center gap-1">

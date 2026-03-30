@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent, useMemo } from 'react';
 import { User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Wallet as WalletType, Transaction } from '../types';
 import { Wallet, Trash2 } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
@@ -18,6 +18,8 @@ export default function Wallets({ user }: { user: User }) {
     const q = query(collection(db, 'wallets'), where('userId', '==', user.uid));
     const unsub = onSnapshot(q, (snap) => {
       setWallets(snap.docs.map(d => ({ id: d.id, ...d.data() } as WalletType)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'wallets');
     });
     return () => unsub();
   }, [user]);
@@ -26,6 +28,8 @@ export default function Wallets({ user }: { user: User }) {
     const q = query(collection(db, 'transactions'), where('userId', '==', user.uid));
     const unsub = onSnapshot(q, (snap) => {
       setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Transaction)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'transactions');
     });
     return () => unsub();
   }, [user]);
@@ -73,14 +77,14 @@ export default function Wallets({ user }: { user: User }) {
     setLoading(true);
     try {
       const walletRef = doc(collection(db, 'wallets'));
-      setDoc(walletRef, {
+      await setDoc(walletRef, {
         userId: user.uid,
         name: name.trim(),
         createdAt: serverTimestamp()
       });
 
       if (numericBalance > 0) {
-        addDoc(collection(db, 'transactions'), {
+        await addDoc(collection(db, 'transactions'), {
           userId: user.uid,
           type: 'income',
           amount: numericBalance,
@@ -95,8 +99,7 @@ export default function Wallets({ user }: { user: User }) {
       setName('');
       setInitialBalance('0');
     } catch (error) {
-      console.error("Error adding wallet: ", error);
-      alert("Gagal menambahkan dompet/rekening.");
+      handleFirestoreError(error, OperationType.WRITE, 'wallets');
     } finally {
       setLoading(false);
     }
@@ -105,10 +108,10 @@ export default function Wallets({ user }: { user: User }) {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      deleteDoc(doc(db, 'wallets', deleteId));
+      await deleteDoc(doc(db, 'wallets', deleteId));
       setDeleteId(null);
     } catch (error) {
-      console.error("Error deleting wallet: ", error);
+      handleFirestoreError(error, OperationType.DELETE, `wallets/${deleteId}`);
     }
   };
 

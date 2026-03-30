@@ -9,12 +9,13 @@
         "type": { "type": "string", "enum": ["income", "expense"] },
         "amount": { "type": "number" },
         "description": { "type": "string" },
+        "notes": { "type": "string" },
         "date": { "type": "string", "format": "date-time" },
         "category": { "type": "string" },
         "walletId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "type", "amount", "description", "date", "walletId", "createdAt"]
+      "required": ["userId", "type", "amount", "description", "date", "createdAt"]
     },
     "Wallet": {
       "title": "Wallet",
@@ -23,8 +24,6 @@
       "properties": {
         "userId": { "type": "string" },
         "name": { "type": "string" },
-        "balance": { "type": "number" },
-        "type": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "name", "createdAt"]
@@ -37,8 +36,6 @@
         "userId": { "type": "string" },
         "name": { "type": "string" },
         "type": { "type": "string", "enum": ["income", "expense"] },
-        "icon": { "type": "string" },
-        "color": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "name", "type", "createdAt"]
@@ -50,11 +47,10 @@
       "properties": {
         "userId": { "type": "string" },
         "type": { "type": "string", "enum": ["payable", "receivable"] },
-        "person": { "type": "string" },
         "amount": { "type": "number" },
         "description": { "type": "string" },
-        "dueDate": { "type": "string", "format": "date" },
         "status": { "type": "string", "enum": ["unpaid", "paid"] },
+        "dueDate": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "type", "amount", "description", "status", "createdAt"]
@@ -68,12 +64,28 @@
         "name": { "type": "string" },
         "targetAmount": { "type": "number" },
         "currentAmount": { "type": "number" },
-        "deadline": { "type": "string", "format": "date" },
         "walletId": { "type": "string" },
-        "status": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "name", "targetAmount", "currentAmount", "walletId", "createdAt"]
+      "required": ["userId", "name", "targetAmount", "currentAmount", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "photoURL": { "type": "string", "format": "uri" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "bottomNavTabs": { 
+          "type": "array", 
+          "items": { "type": "string" },
+          "description": "List of tab names for the bottom navigation bar."
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["displayName", "email", "role", "createdAt"]
     }
   },
   "firestore": {
@@ -81,6 +93,7 @@
     "wallets/{walletId}": { "schema": { "$ref": "#/entities/Wallet" }, "description": "User wallets." },
     "categories/{categoryId}": { "schema": { "$ref": "#/entities/Category" }, "description": "User categories." },
     "debts/{debtId}": { "schema": { "$ref": "#/entities/Debt" }, "description": "User debts/receivables." },
-    "goals/{goalId}": { "schema": { "$ref": "#/entities/Goal" }, "description": "User financial goals." }
+    "goals/{goalId}": { "schema": { "$ref": "#/entities/Goal" }, "description": "User financial goals." },
+    "users/{userId}": { "schema": { "$ref": "#/entities/User" }, "description": "User profile data." }
   }
 }

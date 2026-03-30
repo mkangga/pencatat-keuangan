@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Debt } from '../types';
 import { Trash2, Calendar as CalendarIcon } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
@@ -20,6 +20,8 @@ export default function Debts({ user }: { user: User }) {
     const q = query(collection(db, 'debts'), where('userId', '==', user.uid));
     const unsub = onSnapshot(q, (snap) => {
       setDebts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Debt)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'debts');
     });
     return () => unsub();
   }, [user]);
@@ -44,7 +46,7 @@ export default function Debts({ user }: { user: User }) {
     if (!numericAmount || !description) return;
     setLoading(true);
     try {
-      addDoc(collection(db, 'debts'), {
+      await addDoc(collection(db, 'debts'), {
         userId: user.uid,
         type,
         amount: numericAmount,
@@ -57,8 +59,7 @@ export default function Debts({ user }: { user: User }) {
       setDescription('');
       setDueDate('');
     } catch (error) {
-      console.error("Error adding debt: ", error);
-      alert("Gagal menambahkan catatan.");
+      handleFirestoreError(error, OperationType.WRITE, 'debts');
     } finally {
       setLoading(false);
     }
@@ -67,21 +68,20 @@ export default function Debts({ user }: { user: User }) {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      deleteDoc(doc(db, 'debts', deleteId));
+      await deleteDoc(doc(db, 'debts', deleteId));
       setDeleteId(null);
     } catch (error) {
-      console.error("Error deleting debt: ", error);
-      alert("Gagal menghapus catatan.");
+      handleFirestoreError(error, OperationType.DELETE, `debts/${deleteId}`);
     }
   };
 
   const toggleStatus = async (debt: Debt) => {
     try {
-      updateDoc(doc(db, 'debts', debt.id), {
+      await updateDoc(doc(db, 'debts', debt.id), {
         status: debt.status === 'paid' ? 'unpaid' : 'paid'
       });
     } catch (error) {
-      console.error("Error updating status: ", error);
+      handleFirestoreError(error, OperationType.UPDATE, `debts/${debt.id}`);
     }
   };
 

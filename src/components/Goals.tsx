@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Wallet as WalletIcon, Trash2, Edit2 } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 import { Goal, Wallet as WalletType } from '../types';
@@ -24,6 +24,8 @@ export default function Goals({ user }: { user: User }) {
     const q = query(collection(db, 'goals'), where('userId', '==', user.uid));
     const unsub = onSnapshot(q, (snap) => {
       setGoals(snap.docs.map(d => ({ id: d.id, ...d.data() } as Goal)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'goals');
     });
     return () => unsub();
   }, [user]);
@@ -32,6 +34,8 @@ export default function Goals({ user }: { user: User }) {
     const q = query(collection(db, 'wallets'), where('userId', '==', user.uid));
     const unsub = onSnapshot(q, (snap) => {
       setWallets(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'wallets');
     });
     return () => unsub();
   }, [user]);
@@ -69,7 +73,7 @@ export default function Goals({ user }: { user: User }) {
     setLoading(true);
     try {
       if (editingGoal) {
-        updateDoc(doc(db, 'goals', editingGoal.id), {
+        await updateDoc(doc(db, 'goals', editingGoal.id), {
           name,
           targetAmount: numericTarget,
           currentAmount: numericCurrent,
@@ -78,7 +82,7 @@ export default function Goals({ user }: { user: User }) {
 
         const diff = numericCurrent - editingGoal.currentAmount;
         if (diff !== 0) {
-          addDoc(collection(db, 'transactions'), {
+          await addDoc(collection(db, 'transactions'), {
             userId: user.uid,
             type: diff > 0 ? 'income' : 'expense',
             amount: Math.abs(diff),
@@ -99,11 +103,11 @@ export default function Goals({ user }: { user: User }) {
           walletId: selectedWalletId,
           createdAt: serverTimestamp()
         };
-        addDoc(collection(db, 'goals'), goalData);
+        await addDoc(collection(db, 'goals'), goalData);
 
         // If initial balance is provided and wallet is selected, create a transaction
         if (numericCurrent > 0 && selectedWalletId) {
-          addDoc(collection(db, 'transactions'), {
+          await addDoc(collection(db, 'transactions'), {
             userId: user.uid,
             type: 'income',
             amount: numericCurrent,
@@ -120,8 +124,7 @@ export default function Goals({ user }: { user: User }) {
       setCurrent('0');
       setSelectedWalletId('');
     } catch (error) {
-      console.error("Error saving goal: ", error);
-      alert("Gagal menyimpan target.");
+      handleFirestoreError(error, OperationType.WRITE, 'goals');
     } finally {
       setLoading(false);
     }
@@ -130,11 +133,10 @@ export default function Goals({ user }: { user: User }) {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      deleteDoc(doc(db, 'goals', deleteId));
+      await deleteDoc(doc(db, 'goals', deleteId));
       setDeleteId(null);
     } catch (error) {
-      console.error("Error deleting goal: ", error);
-      alert("Gagal menghapus target.");
+      handleFirestoreError(error, OperationType.DELETE, `goals/${deleteId}`);
     }
   };
 
@@ -165,7 +167,7 @@ export default function Goals({ user }: { user: User }) {
     setLoading(true);
     try {
       // Update goal amount
-      updateDoc(doc(db, 'goals', goal.id), {
+      await updateDoc(doc(db, 'goals', goal.id), {
         currentAmount: goal.currentAmount + numericAmount
       });
 
@@ -175,7 +177,7 @@ export default function Goals({ user }: { user: User }) {
       setProgressWalletId('');
 
       // Create transaction
-      addDoc(collection(db, 'transactions'), {
+      await addDoc(collection(db, 'transactions'), {
         userId: user.uid,
         type: 'income',
         amount: numericAmount,
@@ -186,8 +188,7 @@ export default function Goals({ user }: { user: User }) {
         createdAt: serverTimestamp()
       });
     } catch (error) {
-      console.error("Error updating progress: ", error);
-      alert("Gagal menambah tabungan.");
+      handleFirestoreError(error, OperationType.WRITE, 'goals/progress');
     } finally {
       setLoading(false);
     }

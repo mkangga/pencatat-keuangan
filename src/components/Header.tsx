@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
+import { useLocation } from 'react-router-dom';
 import { PlusCircle, MinusCircle, Menu, Search, Download, Sidebar as SidebarIcon, Wifi, WifiOff, Moon, Sun } from 'lucide-react';
 
 interface HeaderProps {
@@ -30,6 +31,9 @@ export default function Header({
   toggleDarkMode
 }: HeaderProps) {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const location = useLocation();
+
+  const showSearch = ['/', '/transaksi', '/uang-masuk', '/uang-keluar', '/log-aktivitas'].includes(location.pathname);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -68,23 +72,28 @@ export default function Header({
       </div>
 
       <div className="flex-1 max-w-md mx-4 hidden sm:block">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
-          <input
-            type="text"
-            placeholder="Cari transaksi..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 rounded-xl focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm text-gray-900 dark:text-gray-100"
-          />
-        </div>
+        {showSearch && (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
+            <input
+              type="text"
+              placeholder="Cari transaksi..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 rounded-xl focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm text-gray-900 dark:text-gray-100"
+            />
+          </div>
+        )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${isOnline ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30' : 'text-amber-500 bg-amber-50 dark:bg-amber-900/30'}`}>
-          {isOnline ? <Wifi size={12} /> : <WifiOff size={12} />}
-          <span className="hidden xs:inline">{isOnline ? 'Online' : 'Offline'}</span>
-        </div>
+      <div className="flex items-center gap-2 sm:gap-3">
+        <button
+          onClick={toggleDarkMode}
+          className="p-2 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-xl transition-all"
+          title={isDarkMode ? "Mode Terang" : "Mode Gelap"}
+        >
+          {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
 
         <button
           onClick={onExport}
@@ -93,19 +102,24 @@ export default function Header({
         >
           <Download size={20} />
         </button>
+        
+        <div className="h-6 w-px bg-gray-100 dark:bg-gray-700 mx-1 hidden xs:block"></div>
+
         <button
           onClick={onAddIncome}
-          className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+          className="flex items-center justify-center w-10 h-10 sm:w-auto sm:px-4 sm:py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-bold transition-all shadow-sm shadow-emerald-200 dark:shadow-none"
+          title="Tambah Pemasukan"
         >
-          <PlusCircle size={18} />
-          <span className="hidden md:inline">Pemasukan</span>
+          <PlusCircle size={20} />
+          <span className="hidden md:inline ml-2">Pemasukan</span>
         </button>
         <button
           onClick={onAddExpense}
-          className="flex items-center gap-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+          className="flex items-center justify-center w-10 h-10 sm:w-auto sm:px-4 sm:py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-bold transition-all shadow-sm shadow-red-200 dark:shadow-none"
+          title="Tambah Pengeluaran"
         >
-          <MinusCircle size={18} />
-          <span className="hidden md:inline">Pengeluaran</span>
+          <MinusCircle size={20} />
+          <span className="hidden md:inline ml-2">Pengeluaran</span>
         </button>
       </div>
     </header>

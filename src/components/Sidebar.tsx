@@ -3,9 +3,9 @@ import { User } from 'firebase/auth';
 import { auth } from '../firebase';
 import { NavLink } from 'react-router-dom';
 import { 
-  Home, User as UserIcon, ArrowUpRight, ArrowDownRight, 
+  Home, ArrowUpRight, ArrowDownRight, 
   ClipboardList, CreditCard, TrendingUp, Settings, LogOut, PieChart, Wallet, Tags,
-  Moon, Sun, AlertTriangle
+  Moon, Sun, AlertTriangle, ReceiptText, User as UserIcon
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -30,25 +30,26 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: Home },
-    { name: 'Profil', path: '/profil', icon: UserIcon },
-    { name: 'Uang Masuk', path: '/uang-masuk', icon: ArrowUpRight },
-    { name: 'Uang Keluar', path: '/uang-keluar', icon: ArrowDownRight },
+    { name: 'Transaksi', path: '/transaksi', icon: ReceiptText },
+    { name: 'Uang Masuk', path: '/uang-masuk', icon: ArrowDownRight },
+    { name: 'Uang Keluar', path: '/uang-keluar', icon: ArrowUpRight },
     { name: 'Log Aktivitas', path: '/log-aktivitas', icon: ClipboardList },
     { name: 'Analisis', path: '/analisis', icon: PieChart },
     { name: 'Hutang/Piutang', path: '/hutang-piutang', icon: CreditCard },
     { name: 'Masa Depan', path: '/masa-depan', icon: TrendingUp },
     { name: 'Dompet & Rekening', path: '/dompet-rekening', icon: Wallet },
     { name: 'Kategori Transaksi', path: '/kategori-transaksi', icon: Tags },
+    { name: 'Profil', path: '/profil', icon: UserIcon },
     { name: 'Pengaturan', path: '/pengaturan', icon: Settings },
   ];
 
   return (
     <aside className={`bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex-shrink-0 flex flex-col h-full min-h-0 transition-colors duration-300 ${className}`}>
       <div className={`p-6 flex items-center gap-3 border-b border-gray-50 dark:border-gray-700 ${isCollapsed ? 'justify-center' : ''}`}>
-        <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex-shrink-0 flex items-center justify-center font-bold text-sm">
-          {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'A'}
+        <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-sm shadow-emerald-200">
+          <ReceiptText size={20} />
         </div>
-        {!isCollapsed && <span className="font-semibold text-gray-800 dark:text-gray-200 truncate">{user.displayName || 'User'}</span>}
+        {!isCollapsed && <span className="font-bold text-xl text-emerald-600 dark:text-emerald-500">CatatUang</span>}
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 pb-20">

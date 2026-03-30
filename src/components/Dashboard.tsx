@@ -1,9 +1,9 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { User, updateProfile } from 'firebase/auth';
-import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { db } from '../firebase';
-import { Transaction, Wallet, Category } from '../types';
+import { collection, query, where, orderBy, onSnapshot, limit, deleteDoc, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { db, handleFirestoreError, OperationType } from '../firebase';
+import { Transaction, Wallet, Category, AppUser } from '../types';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import SummaryCards from './SummaryCards';
@@ -11,6 +11,8 @@ import TransactionList from './TransactionList';
 import AddTransactionModal from './AddTransactionModal';
 import ExportModal from './ExportModal';
 import ActivityLog from './ActivityLog';
+import Transaksi from './Transaksi';
+import TransactionDetailModal from './TransactionDetailModal';
 import Debts from './Debts';
 import Goals from './Goals';
 import Settings from './Settings';
@@ -21,6 +23,7 @@ import { BellRing } from 'lucide-react';
 import { MobileDrawer } from './MobileDrawer';
 import BottomNav from './BottomNav';
 import { isToday, isSameMonth, parseISO } from 'date-fns';
+import { checkAndNotify } from '../services/notificationService';
 
 interface DashboardProps {
   user: User;
@@ -32,11 +35,13 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [appUser, setAppUser] = useState<AppUser | null>(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'income' | 'expense'>('income');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [selectedDetailTransaction, setSelectedDetailTransaction] = useState<Transaction | null>(null);
   
   // New states for search and filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,8 +66,34 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
   const [incomeSort, setIncomeSort] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
   const [expenseSort, setExpenseSort] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
 
+  const location = useLocation();
+
+  useEffect(() => {
+    setSearchQuery('');
+  }, [location.pathname]);
+
   useEffect(() => {
     if (!user) return;
+
+    // Fetch AppUser data
+    const userDocRef = doc(db, 'users', user.uid);
+    const unsubUser = onSnapshot(userDocRef, async (snap) => {
+      if (snap.exists()) {
+        setAppUser({ id: snap.id, ...snap.data() } as AppUser);
+      } else {
+        // Initialize user doc if it doesn't exist
+        const initialUser: Partial<AppUser> = {
+          uid: user.uid,
+          displayName: user.displayName || 'User',
+          email: user.email || '',
+          photoURL: user.photoURL || '',
+          role: 'user',
+          bottomNavTabs: ['Dashboard', 'Transaksi', 'Masuk', 'Keluar', 'Analisis'],
+          createdAt: new Date().toISOString()
+        };
+        await setDoc(userDocRef, initialUser);
+      }
+    });
 
     // Fetch Transactions
     const qTxs = query(
@@ -75,38 +106,50 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
     const unsubTxs = onSnapshot(qTxs, (snapshot) => {
       const txs = snapshot.docs.map((doc) => {
         const data = doc.data();
+        const date = data.date?.toDate ? data.date.toDate().toISOString() : (data.date || new Date().toISOString());
+        const createdAt = data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || date);
         return {
           id: doc.id,
           ...data,
-          date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+          date,
+          createdAt,
         } as Transaction;
       });
       setTransactions(txs);
       
       if (txs.length > 0) {
-        const lastTxDate = new Date(txs[0].createdAt || txs[0].date).getTime();
+        const lastTxDateObj = new Date(txs[0].createdAt || txs[0].date);
+        const lastTxTime = lastTxDateObj.getTime();
         const now = new Date().getTime();
-        const hoursSinceLastTx = (now - lastTxDate) / (1000 * 60 * 60);
+        const hoursSinceLastTx = (now - lastTxTime) / (1000 * 60 * 60);
         setShowReminder(hoursSinceLastTx > 24);
+        checkAndNotify(lastTxDateObj);
       } else {
         setShowReminder(true);
+        checkAndNotify(null);
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'transactions');
     });
 
     // Fetch Wallets
     const qWallets = query(collection(db, 'wallets'), where('userId', '==', user.uid));
     const unsubWallets = onSnapshot(qWallets, (snap) => {
       setWallets(snap.docs.map(d => ({ id: d.id, ...d.data() } as Wallet)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'wallets');
     });
 
     // Fetch Categories
     const qCategories = query(collection(db, 'categories'), where('userId', '==', user.uid));
     const unsubCategories = onSnapshot(qCategories, (snap) => {
       setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() } as Category)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'categories');
     });
 
     return () => {
+      unsubUser();
       unsubTxs();
       unsubWallets();
       unsubCategories();
@@ -119,19 +162,23 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
     (t.category && t.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const incomeTransactions = searchedTransactions.filter(t => t.type === 'income');
-  const expenseTransactions = searchedTransactions.filter(t => t.type === 'expense');
+  const searchedIncomeTransactions = searchedTransactions.filter(t => t.type === 'income');
+  const searchedExpenseTransactions = searchedTransactions.filter(t => t.type === 'expense');
+
+  // For Summary Cards and Dashboard (Unfiltered by search)
+  const allIncomeTransactions = transactions.filter(t => t.type === 'income');
+  const allExpenseTransactions = transactions.filter(t => t.type === 'expense');
 
   const now = new Date();
 
-  const incomeToday = incomeTransactions.filter(t => isToday(parseISO(t.date))).reduce((acc, curr) => acc + curr.amount, 0);
-  const expenseToday = expenseTransactions.filter(t => isToday(parseISO(t.date))).reduce((acc, curr) => acc + curr.amount, 0);
+  const incomeToday = allIncomeTransactions.filter(t => isToday(parseISO(t.date))).reduce((acc, curr) => acc + curr.amount, 0);
+  const expenseToday = allExpenseTransactions.filter(t => isToday(parseISO(t.date))).reduce((acc, curr) => acc + curr.amount, 0);
 
-  const incomeMonth = incomeTransactions.filter(t => isSameMonth(parseISO(t.date), now)).reduce((acc, curr) => acc + curr.amount, 0);
-  const expenseMonth = expenseTransactions.filter(t => isSameMonth(parseISO(t.date), now)).reduce((acc, curr) => acc + curr.amount, 0);
+  const incomeMonth = allIncomeTransactions.filter(t => isSameMonth(parseISO(t.date), now)).reduce((acc, curr) => acc + curr.amount, 0);
+  const expenseMonth = allExpenseTransactions.filter(t => isSameMonth(parseISO(t.date), now)).reduce((acc, curr) => acc + curr.amount, 0);
 
-  const totalIncome = incomeTransactions.reduce((acc, curr) => acc + curr.amount, 0);
-  const totalExpense = expenseTransactions.reduce((acc, curr) => acc + curr.amount, 0);
+  const totalIncome = allIncomeTransactions.reduce((acc, curr) => acc + curr.amount, 0);
+  const totalExpense = allExpenseTransactions.reduce((acc, curr) => acc + curr.amount, 0);
   const balance = totalIncome - totalExpense;
 
   const sortTransactions = (txs: Transaction[], sortType: string) => {
@@ -144,8 +191,8 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
     });
   };
 
-  const sortedIncomeTransactions = sortTransactions(incomeTransactions, incomeSort);
-  const sortedExpenseTransactions = sortTransactions(expenseTransactions, expenseSort);
+  const sortedIncomeTransactions = sortTransactions(allIncomeTransactions, incomeSort);
+  const sortedExpenseTransactions = sortTransactions(allExpenseTransactions, expenseSort);
 
   const openModal = (type: 'income' | 'expense') => {
     setModalType(type);
@@ -157,6 +204,18 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
     setModalType(tx.type);
     setEditingTransaction(tx);
     setIsModalOpen(true);
+  };
+
+  const openDetailModal = (tx: Transaction) => {
+    setSelectedDetailTransaction(tx);
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'transactions', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `transactions/${id}`);
+    }
   };
 
   const applyFilters = (txs: Transaction[]) => {
@@ -182,7 +241,16 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
       </div>
       <div>
         <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Kategori</label>
-        <input type="text" placeholder="Semua kategori..." value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" />
+        <select 
+          value={filterCategory} 
+          onChange={e => setFilterCategory(e.target.value)} 
+          className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100"
+        >
+          <option value="">Semua kategori...</option>
+          {categories.map(cat => (
+            <option key={cat.id} value={cat.name}>{cat.name}</option>
+          ))}
+        </select>
       </div>
       <div className="flex items-end">
         <button onClick={() => { setStartDate(''); setEndDate(''); setFilterCategory(''); }} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">Reset Filter</button>
@@ -270,7 +338,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                         <option value="amount-asc">Terendah</option>
                       </select>
                     </div>
-                    <TransactionList transactions={sortedIncomeTransactions.slice(0, 5)} type="income" onEdit={openEditModal} />
+                    <TransactionList transactions={sortTransactions(searchedIncomeTransactions, incomeSort).slice(0, 5)} type="income" onEdit={openEditModal} onViewDetail={openDetailModal} />
                   </div>
                   
                   <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
@@ -287,7 +355,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                         <option value="amount-asc">Terendah</option>
                       </select>
                     </div>
-                    <TransactionList transactions={sortedExpenseTransactions.slice(0, 5)} type="expense" onEdit={openEditModal} />
+                    <TransactionList transactions={sortTransactions(searchedExpenseTransactions, expenseSort).slice(0, 5)} type="expense" onEdit={openEditModal} onViewDetail={openDetailModal} />
                   </div>
                 </div>
               </div>
@@ -297,26 +365,27 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Semua Pemasukan</h1>
                 {renderFilters()}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
-                  <TransactionList transactions={applyFilters(incomeTransactions)} type="income" onEdit={openEditModal} />
+                  <TransactionList transactions={applyFilters(searchedIncomeTransactions)} type="income" onEdit={openEditModal} onViewDetail={openDetailModal} />
                 </div>
               </div>
             } />
+            <Route path="/transaksi" element={<Transaksi transactions={searchedTransactions} onEdit={openEditModal} onViewDetail={openDetailModal} />} />
             <Route path="/uang-keluar" element={
               <div className="max-w-7xl mx-auto space-y-6">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Semua Pengeluaran</h1>
                 {renderFilters()}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
-                  <TransactionList transactions={applyFilters(expenseTransactions)} type="expense" onEdit={openEditModal} />
+                  <TransactionList transactions={applyFilters(searchedExpenseTransactions)} type="expense" onEdit={openEditModal} onViewDetail={openDetailModal} />
                 </div>
               </div>
             } />
-            <Route path="/log-aktivitas" element={<ActivityLog transactions={searchedTransactions} />} />
-            <Route path="/analisis" element={<Analysis transactions={searchedTransactions} />} />
+            <Route path="/log-aktivitas" element={<ActivityLog transactions={searchedTransactions} onViewDetail={openDetailModal} />} />
+            <Route path="/analisis" element={<Analysis transactions={transactions} />} />
             <Route path="/hutang-piutang" element={<Debts user={user} />} />
             <Route path="/masa-depan" element={<Goals user={user} />} />
             <Route path="/dompet-rekening" element={<Wallets user={user} />} />
             <Route path="/kategori-transaksi" element={<Categories user={user} />} />
-            <Route path="/pengaturan" element={<Settings user={user} />} />
+            <Route path="/pengaturan" element={<Settings user={user} appUser={appUser} />} />
             <Route path="/profil" element={
               <div className="max-w-7xl mx-auto space-y-8">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 font-sans">Profil Pengguna</h1>
@@ -366,7 +435,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
             built by <a href="https://mka.my.id" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">MKA</a>
           </footer>
         </main>
-        <BottomNav />
+        <BottomNav tabs={appUser?.bottomNavTabs} />
       </div>
 
       {isModalOpen && (
@@ -390,6 +459,16 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
           wallets={wallets}
         />
       )}
+
+      <TransactionDetailModal
+        isOpen={!!selectedDetailTransaction}
+        onClose={() => setSelectedDetailTransaction(null)}
+        transaction={selectedDetailTransaction}
+        wallets={wallets}
+        categories={categories}
+        onEdit={openEditModal}
+        onDelete={handleDeleteTransaction}
+      />
     </div>
   );
 }

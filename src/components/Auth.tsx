@@ -1,5 +1,6 @@
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth, db, handleFirestoreError, OperationType } from '../firebase';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Wallet, Moon, Sun } from 'lucide-react';
 
 interface AuthProps {
@@ -11,7 +12,37 @@ export default function Auth({ isDarkMode, toggleDarkMode }: AuthProps) {
   const handleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+
+        if (!userDoc.exists()) {
+          try {
+            await setDoc(userRef, {
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL,
+              role: 'client',
+              createdAt: serverTimestamp(),
+              lastLogin: serverTimestamp()
+            });
+          } catch (error) {
+            handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+          }
+        } else {
+          try {
+            await updateDoc(userRef, {
+              lastLogin: serverTimestamp()
+            });
+          } catch (error) {
+            handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+          }
+        }
+      }
     } catch (error) {
       console.error('Error signing in:', error);
       alert('Gagal masuk. Silakan coba lagi.');

@@ -8,6 +8,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "mykarim354@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
     function isDocOwner() {
       return isAuthenticated() && request.auth.uid == resource.data.userId;
     }
@@ -39,15 +49,29 @@ service cloud.firestore {
     // ===============================================================
     // Domain Validators
     // ===============================================================
+    function isValidUser(data) {
+      return data.keys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'role', 'createdAt', 'lastLogin', 'bottomNavTabs']) &&
+             data.uid is string && data.uid.size() > 0 &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 100 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             (data.photoURL == null || (data.photoURL is string && data.photoURL.size() > 0)) &&
+             data.role in ['user', 'admin', 'client'] &&
+             (data.createdAt is timestamp || data.createdAt is string) &&
+             (data.lastLogin == null || data.lastLogin is timestamp || data.lastLogin is string) &&
+             (data.bottomNavTabs == null || (data.bottomNavTabs is list && data.bottomNavTabs.size() <= 5));
+    }
+
     function isValidTransaction(data) {
-      return hasRequiredFields(['userId', 'type', 'amount', 'description', 'date', 'walletId', 'createdAt']) &&
+      return hasRequiredFields(['userId', 'type', 'amount', 'description', 'date', 'createdAt']) &&
+             data.keys().hasOnly(['userId', 'type', 'amount', 'description', 'notes', 'date', 'category', 'walletId', 'createdAt', 'updatedAt']) &&
              data.userId is string && data.userId.size() > 0 &&
              data.type in ['income', 'expense'] &&
-             data.amount is number && data.amount > 0 &&
-             data.description is string && data.description.size() > 0 && data.description.size() <= 100 &&
+             data.amount is number && data.amount >= 0 &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 200 &&
              data.date is timestamp &&
-             isValidOptionalString('category', 1, 50) &&
-             data.walletId is string && data.walletId.size() > 0 && data.walletId.size() <= 50 &&
+             isValidOptionalString('notes', 0, 500) &&
+             isValidOptionalString('category', 1, 100) &&
+             isValidOptionalString('walletId', 1, 100) &&
              data.createdAt is timestamp;
     }
 
@@ -86,39 +110,48 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
 
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'client' || isAdmin());
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      (request.resource.data.role == resource.data.role || isAdmin()) &&
+                      areImmutableFieldsUnchanged(['uid', 'createdAt']);
+      allow delete: if isAdmin();
+    }
+
     match /transactions/{transactionId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isDocOwner() || isAdmin();
       allow create: if isAuthenticated() && isValidTransaction(request.resource.data) && uidUnchanged();
-      allow update: if isAuthenticated() && isDocOwner() && isValidTransaction(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['createdAt']);
-      allow delete: if isAuthenticated() && isDocOwner();
+      allow update: if isDocOwner() && isValidTransaction(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['userId', 'createdAt']);
+      allow delete: if isDocOwner() || isAdmin();
     }
 
     match /debts/{debtId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isDocOwner() || isAdmin();
       allow create: if isAuthenticated() && isValidDebt(request.resource.data) && uidUnchanged();
-      allow update: if isAuthenticated() && isDocOwner() && isValidDebt(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['createdAt']);
-      allow delete: if isAuthenticated() && isDocOwner();
+      allow update: if isDocOwner() && isValidDebt(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['userId', 'createdAt']);
+      allow delete: if isDocOwner() || isAdmin();
     }
 
     match /goals/{goalId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isDocOwner() || isAdmin();
       allow create: if isAuthenticated() && isValidGoal(request.resource.data) && uidUnchanged();
-      allow update: if isAuthenticated() && isDocOwner() && isValidGoal(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['createdAt']);
-      allow delete: if isAuthenticated() && isDocOwner();
+      allow update: if isDocOwner() && isValidGoal(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['userId', 'createdAt']);
+      allow delete: if isDocOwner() || isAdmin();
     }
 
     match /wallets/{walletId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isDocOwner() || isAdmin();
       allow create: if isAuthenticated() && isValidWallet(request.resource.data) && uidUnchanged();
-      allow update: if isAuthenticated() && isDocOwner() && isValidWallet(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['createdAt']);
-      allow delete: if isAuthenticated() && isDocOwner();
+      allow update: if isDocOwner() && isValidWallet(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['userId', 'createdAt']);
+      allow delete: if isDocOwner() || isAdmin();
     }
 
     match /categories/{categoryId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isDocOwner() || isAdmin();
       allow create: if isAuthenticated() && isValidCategory(request.resource.data) && uidUnchanged();
-      allow update: if isAuthenticated() && isDocOwner() && isValidCategory(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['createdAt']);
-      allow delete: if isAuthenticated() && isDocOwner();
+      allow update: if isDocOwner() && isValidCategory(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['userId', 'createdAt']);
+      allow delete: if isDocOwner() || isAdmin();
     }
   }
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Category } from '../types';
 import { Tags, Trash2 } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
@@ -17,6 +17,8 @@ export default function Categories({ user }: { user: User }) {
     const q = query(collection(db, 'categories'), where('userId', '==', user.uid));
     const unsub = onSnapshot(q, (snap) => {
       setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() } as Category)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'categories');
     });
     return () => unsub();
   }, [user]);
@@ -26,7 +28,7 @@ export default function Categories({ user }: { user: User }) {
     if (!name.trim()) return;
     setLoading(true);
     try {
-      addDoc(collection(db, 'categories'), {
+      await addDoc(collection(db, 'categories'), {
         userId: user.uid,
         name: name.trim(),
         type,
@@ -34,8 +36,7 @@ export default function Categories({ user }: { user: User }) {
       });
       setName('');
     } catch (error) {
-      console.error("Error adding category: ", error);
-      alert("Gagal menambahkan kategori.");
+      handleFirestoreError(error, OperationType.WRITE, 'categories');
     } finally {
       setLoading(false);
     }
@@ -44,10 +45,10 @@ export default function Categories({ user }: { user: User }) {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      deleteDoc(doc(db, 'categories', deleteId));
+      await deleteDoc(doc(db, 'categories', deleteId));
       setDeleteId(null);
     } catch (error) {
-      console.error("Error deleting category: ", error);
+      handleFirestoreError(error, OperationType.DELETE, `categories/${deleteId}`);
     }
   };
 

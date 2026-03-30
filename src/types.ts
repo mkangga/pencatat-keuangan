@@ -46,3 +46,14 @@ export interface Category {
   type: 'income' | 'expense';
   createdAt: string;
 }
+
+export interface AppUser {
+  id: string;
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  role: 'user' | 'admin';
+  bottomNavTabs?: string[];
+  createdAt: string;
+}

@@ -4,9 +4,10 @@ import { id } from 'date-fns/locale';
 
 interface ActivityLogProps {
   transactions: Transaction[];
+  onViewDetail: (tx: Transaction) => void;
 }
 
-export default function ActivityLog({ transactions }: ActivityLogProps) {
+export default function ActivityLog({ transactions, onViewDetail }: ActivityLogProps) {
   const formatCurrency = (amount: number) => {
     const formatted = new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -24,7 +25,11 @@ export default function ActivityLog({ transactions }: ActivityLogProps) {
         {transactions.length > 0 ? (
           <div className="space-y-4">
             {transactions.map(tx => (
-              <div key={tx.id} className="flex justify-between items-center p-4 border-b border-gray-50 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors">
+              <div 
+                key={tx.id} 
+                onClick={() => onViewDetail(tx)}
+                className="flex justify-between items-center p-4 border-b border-gray-50 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors cursor-pointer"
+              >
                 <div>
                   <p className="font-medium text-gray-800 dark:text-gray-100">{tx.description}</p>
                   {tx.notes && (

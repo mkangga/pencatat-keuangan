@@ -1,7 +1,7 @@
 import { useState, FormEvent, useEffect, ChangeEvent, useMemo } from 'react';
 import { User } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { X, Wallet as WalletIcon, Tag, AlertCircle } from 'lucide-react';
 import { Wallet, Category, Transaction } from '../types';
 import { useNavigate } from 'react-router-dom';
@@ -174,7 +174,14 @@ export default function AddTransactionModal({
 
     setLoading(true);
     try {
-      const fullDate = new Date(`${date}T${time}`);
+      const [year, month, day] = date.split('-').map(Number);
+      const [hours, minutes] = time.split(':').map(Number);
+      const fullDate = new Date(year, month - 1, day, hours, minutes);
+      
+      if (isNaN(fullDate.getTime())) {
+        throw new Error("Invalid date or time format");
+      }
+
       const txData: any = {
         userId: user.uid,
         type,
@@ -188,15 +195,14 @@ export default function AddTransactionModal({
       txData.walletId = walletId;
 
       if (editingTransaction) {
-        updateDoc(doc(db, 'transactions', editingTransaction.id), txData);
+        await updateDoc(doc(db, 'transactions', editingTransaction.id), txData);
       } else {
         txData.createdAt = serverTimestamp();
-        addDoc(collection(db, 'transactions'), txData);
+        await addDoc(collection(db, 'transactions'), txData);
       }
       onClose();
     } catch (error) {
-      console.error("Error saving transaction: ", error);
-      alert("Gagal menyimpan transaksi.");
+      handleFirestoreError(error, OperationType.WRITE, 'transactions');
     } finally {
       setLoading(false);
     }
