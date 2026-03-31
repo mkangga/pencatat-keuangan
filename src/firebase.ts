@@ -8,6 +8,10 @@ import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager
 const configs = import.meta.glob('../firebase-applet-config.json', { eager: true, import: 'default' });
 const configFromFile = configs['../firebase-applet-config.json'] as any;
 
+if (import.meta.env.DEV) {
+  console.log('Firebase Config Source:', configFromFile ? 'File' : 'Environment Variables');
+}
+
 const firebaseConfig = {
   apiKey: configFromFile?.apiKey || import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: configFromFile?.authDomain || import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -17,6 +21,16 @@ const firebaseConfig = {
   appId: configFromFile?.appId || import.meta.env.VITE_FIREBASE_APP_ID,
   firestoreDatabaseId: configFromFile?.firestoreDatabaseId || import.meta.env.VITE_FIREBASE_DATABASE_ID
 };
+
+// Validate config
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  console.error('Firebase Configuration is missing! Please check your environment variables or firebase-applet-config.json');
+} else {
+  if (import.meta.env.DEV) {
+    console.log('Firebase Project ID:', firebaseConfig.projectId);
+    console.log('Firestore Database ID:', firebaseConfig.firestoreDatabaseId || '(default)');
+  }
+}
 
 export enum OperationType {
   CREATE = 'create',

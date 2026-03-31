@@ -61,7 +61,7 @@ export default function Header({
         >
           <SidebarIcon size={20} className={isSidebarCollapsed ? 'rotate-180' : ''} />
         </button>
-        <div className="flex flex-col">
+        <div className="flex flex-col hidden sm:flex">
           <h1 className="text-lg font-bold text-emerald-600 dark:text-emerald-500">
             CatatUang
           </h1>

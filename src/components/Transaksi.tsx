@@ -8,11 +8,12 @@ import { Calendar } from 'lucide-react';
 
 interface TransaksiProps {
   transactions: Transaction[];
+  searchedTransactions: Transaction[];
   onEdit: (tx: Transaction) => void;
   onViewDetail: (tx: Transaction) => void;
 }
 
-export default function Transaksi({ transactions, onEdit, onViewDetail }: TransaksiProps) {
+export default function Transaksi({ transactions, searchedTransactions, onEdit, onViewDetail }: TransaksiProps) {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   const safeParseDate = (dateStr: string) => {
@@ -28,9 +29,13 @@ export default function Transaksi({ transactions, onEdit, onViewDetail }: Transa
     isSameDay(safeParseDate(t.date), safeParseDate(selectedDate))
   );
 
+  const searchedFilteredTransactions = searchedTransactions.filter(t => 
+    isSameDay(safeParseDate(t.date), safeParseDate(selectedDate))
+  );
+
   const incomeTransactions = filteredTransactions.filter(t => t.type === 'income');
   const expenseTransactions = filteredTransactions.filter(t => t.type === 'expense');
-  const allTransactions = [...incomeTransactions, ...expenseTransactions].sort((a, b) => {
+  const allTransactions = [...searchedFilteredTransactions].sort((a, b) => {
     const dateA = safeParseDate(a.date).getTime();
     const dateB = safeParseDate(b.date).getTime();
     return dateB - dateA;

@@ -370,7 +370,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                 </div>
               </div>
             } />
-            <Route path="/transaksi" element={<Transaksi transactions={searchedTransactions} onEdit={openEditModal} onViewDetail={openDetailModal} />} />
+            <Route path="/transaksi" element={<Transaksi transactions={transactions} searchedTransactions={searchedTransactions} onEdit={openEditModal} onViewDetail={openDetailModal} />} />
             <Route path="/uang-keluar" element={
               <div className="max-w-7xl mx-auto space-y-6">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Semua Pengeluaran</h1>
