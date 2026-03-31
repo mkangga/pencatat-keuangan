@@ -99,14 +99,20 @@ export default function TransactionList({ transactions, type, onEdit, onViewDeta
               <div className="flex items-center gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                 {onEdit && (
                   <button 
-                    onClick={() => onEdit(tx)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(tx);
+                    }}
                     className="text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg"
                   >
                     <Edit2 size={14} />
                   </button>
                 )}
                 <button 
-                  onClick={() => setDeleteId(tx.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteId(tx.id);
+                  }}
                   className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg"
                 >
                   <Trash2 size={14} />
