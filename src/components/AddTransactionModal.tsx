@@ -195,10 +195,14 @@ export default function AddTransactionModal({
       txData.walletId = walletId;
 
       if (editingTransaction) {
-        await updateDoc(doc(db, 'transactions', editingTransaction.id), txData);
+        updateDoc(doc(db, 'transactions', editingTransaction.id), txData).catch(error => {
+          handleFirestoreError(error, OperationType.WRITE, 'transactions');
+        });
       } else {
         txData.createdAt = serverTimestamp();
-        await addDoc(collection(db, 'transactions'), txData);
+        addDoc(collection(db, 'transactions'), txData).catch(error => {
+          handleFirestoreError(error, OperationType.WRITE, 'transactions');
+        });
       }
       onClose();
     } catch (error) {

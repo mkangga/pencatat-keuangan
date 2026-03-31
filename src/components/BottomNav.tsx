@@ -1,14 +1,14 @@
 import { NavLink } from 'react-router-dom';
 import { 
-  Home, ArrowUpRight, ArrowDownRight, PieChart, ReceiptText, 
+  Home, PlusCircle, MinusCircle, PieChart, ReceiptText, 
   ClipboardList, CreditCard, TrendingUp, Wallet, Tags, Settings, User
 } from 'lucide-react';
 
 export const ALL_NAV_ITEMS = [
   { name: 'Dashboard', path: '/', icon: Home },
   { name: 'Transaksi', path: '/transaksi', icon: ReceiptText },
-  { name: 'Masuk', path: '/uang-masuk', icon: ArrowDownRight },
-  { name: 'Keluar', path: '/uang-keluar', icon: ArrowUpRight },
+  { name: 'Masuk', path: '/uang-masuk', icon: PlusCircle },
+  { name: 'Keluar', path: '/uang-keluar', icon: MinusCircle },
   { name: 'Analisis', path: '/analisis', icon: PieChart },
   { name: 'Log', path: '/log-aktivitas', icon: ClipboardList },
   { name: 'Hutang', path: '/hutang-piutang', icon: CreditCard },

@@ -1,5 +1,5 @@
 import { Transaction, Wallet, Category } from '../types';
-import { X, Calendar, Clock, Tag, Wallet as WalletIcon, FileText, ArrowUp, ArrowDown, Edit2, Trash2 } from 'lucide-react';
+import { X, Calendar, Clock, Tag, Wallet as WalletIcon, FileText, PlusCircle, MinusCircle, Edit2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
@@ -58,7 +58,7 @@ export default function TransactionDetailModal({
           
           <div className="flex flex-col items-center text-center space-y-2">
             <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md mb-2">
-              {isIncome ? <ArrowDown size={32} strokeWidth={2.5} /> : <ArrowUp size={32} strokeWidth={2.5} />}
+              {isIncome ? <PlusCircle size={32} strokeWidth={2.5} /> : <MinusCircle size={32} strokeWidth={2.5} />}
             </div>
             <h3 className="text-sm font-medium opacity-80 uppercase tracking-widest">
               Detail {isIncome ? 'Pemasukan' : 'Pengeluaran'}

@@ -1,4 +1,4 @@
-import { ArrowUp, ArrowDown, CreditCard, CalendarDays, Clock } from 'lucide-react';
+import { PlusCircle, MinusCircle, CreditCard, CalendarDays, Clock } from 'lucide-react';
 
 interface SummaryCardsProps {
   incomeToday: number;
@@ -25,57 +25,57 @@ export default function SummaryCards({ incomeToday, expenseToday, incomeMonth, e
         <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 dark:text-blue-400">
           <CreditCard size={24} strokeWidth={2.5} />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1">Saldo Saat Ini</p>
-          <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(balance)}</p>
+          <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 break-words">{formatCurrency(balance)}</p>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4 transition-all hover:-translate-y-1 duration-200">
-        <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400">
-          <ArrowDown size={24} strokeWidth={2.5} />
+        <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex-shrink-0 flex items-center justify-center text-emerald-500 dark:text-emerald-400">
+          <PlusCircle size={24} strokeWidth={2.5} />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1 flex items-center gap-1">
             <Clock size={12} /> Pemasukan Hari Ini
           </p>
-          <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(incomeToday)}</p>
+          <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 break-words">{formatCurrency(incomeToday)}</p>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4 transition-all hover:-translate-y-1 duration-200">
-        <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-500 dark:text-red-400">
-          <ArrowUp size={24} strokeWidth={2.5} />
+        <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/30 flex-shrink-0 flex items-center justify-center text-red-500 dark:text-red-400">
+          <MinusCircle size={24} strokeWidth={2.5} />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1 flex items-center gap-1">
             <Clock size={12} /> Pengeluaran Hari Ini
           </p>
-          <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(expenseToday)}</p>
+          <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 break-words">{formatCurrency(expenseToday)}</p>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4 transition-all hover:-translate-y-1 duration-200">
-        <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400">
-          <ArrowDown size={24} strokeWidth={2.5} />
+        <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex-shrink-0 flex items-center justify-center text-emerald-500 dark:text-emerald-400">
+          <PlusCircle size={24} strokeWidth={2.5} />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1 flex items-center gap-1">
             <CalendarDays size={12} /> Pemasukan Bulan Ini
           </p>
-          <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(incomeMonth)}</p>
+          <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 break-words">{formatCurrency(incomeMonth)}</p>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4 transition-all hover:-translate-y-1 duration-200">
-        <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-500 dark:text-red-400">
-          <ArrowUp size={24} strokeWidth={2.5} />
+        <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/30 flex-shrink-0 flex items-center justify-center text-red-500 dark:text-red-400">
+          <MinusCircle size={24} strokeWidth={2.5} />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1 flex items-center gap-1">
             <CalendarDays size={12} /> Pengeluaran Bulan Ini
           </p>
-          <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(expenseMonth)}</p>
+          <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 break-words">{formatCurrency(expenseMonth)}</p>
         </div>
       </div>
     </div>

@@ -77,14 +77,16 @@ export default function Wallets({ user }: { user: User }) {
     setLoading(true);
     try {
       const walletRef = doc(collection(db, 'wallets'));
-      await setDoc(walletRef, {
+      setDoc(walletRef, {
         userId: user.uid,
         name: name.trim(),
         createdAt: serverTimestamp()
+      }).catch(error => {
+        handleFirestoreError(error, OperationType.WRITE, 'wallets');
       });
 
       if (numericBalance > 0) {
-        await addDoc(collection(db, 'transactions'), {
+        addDoc(collection(db, 'transactions'), {
           userId: user.uid,
           type: 'income',
           amount: numericBalance,
@@ -93,6 +95,8 @@ export default function Wallets({ user }: { user: User }) {
           walletId: walletRef.id,
           date: new Date(),
           createdAt: serverTimestamp()
+        }).catch(error => {
+          handleFirestoreError(error, OperationType.WRITE, 'transactions');
         });
       }
 
@@ -108,7 +112,9 @@ export default function Wallets({ user }: { user: User }) {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      await deleteDoc(doc(db, 'wallets', deleteId));
+      deleteDoc(doc(db, 'wallets', deleteId)).catch(error => {
+        handleFirestoreError(error, OperationType.DELETE, `wallets/${deleteId}`);
+      });
       setDeleteId(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `wallets/${deleteId}`);

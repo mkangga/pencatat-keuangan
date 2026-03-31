@@ -28,19 +28,19 @@ export default function ActivityLog({ transactions, onViewDetail }: ActivityLogP
               <div 
                 key={tx.id} 
                 onClick={() => onViewDetail(tx)}
-                className="flex justify-between items-center p-4 border-b border-gray-50 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors cursor-pointer"
+                className="flex justify-between items-center p-4 border-b border-gray-50 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors cursor-pointer gap-3"
               >
-                <div>
-                  <p className="font-medium text-gray-800 dark:text-gray-100">{tx.description}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-800 dark:text-gray-100 break-words">{tx.description}</p>
                   {tx.notes && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{tx.notes}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 break-words">{tx.notes}</p>
                   )}
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     {format(new Date(tx.date), 'dd MMMM yyyy', { locale: id })}
                     {tx.category && ` • ${tx.category}`}
                   </p>
                 </div>
-                <div className={`font-bold ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                <div className={`font-bold whitespace-nowrap flex-shrink-0 ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                   {tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
                 </div>
               </div>

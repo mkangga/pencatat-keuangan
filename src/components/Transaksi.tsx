@@ -77,22 +77,22 @@ export default function Transaksi({ transactions, searchedTransactions, onEdit, 
           </span>
         </div>
         
-        <div className="grid grid-cols-3 gap-4">
-          <div className="flex flex-col items-center text-center space-y-1">
-            <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold">Pemasukan</p>
-            <p className="text-sm sm:text-lg font-extrabold truncate w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+          <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 min-w-0">
+            <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Pemasukan</p>
+            <p className="text-sm sm:text-lg font-extrabold break-words text-right sm:text-center">
               + {totalIncome.toLocaleString('id-ID')}
             </p>
           </div>
-          <div className="flex flex-col items-center text-center space-y-1 border-x border-white/10">
-            <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold">Pengeluaran</p>
-            <p className="text-sm sm:text-lg font-extrabold truncate w-full">
+          <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 border-t border-white/10 sm:border-t-0 sm:border-x sm:border-white/10 min-w-0">
+            <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Pengeluaran</p>
+            <p className="text-sm sm:text-lg font-extrabold break-words text-right sm:text-center">
               - {totalExpense.toLocaleString('id-ID')}
             </p>
           </div>
-          <div className="flex flex-col items-center text-center space-y-1">
-            <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold">Selisih</p>
-            <p className={`text-sm sm:text-lg font-extrabold truncate w-full ${balance >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+          <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 border-t border-white/10 sm:border-t-0 min-w-0">
+            <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Selisih</p>
+            <p className={`text-sm sm:text-lg font-extrabold break-words text-right sm:text-center ${balance >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
               {balance >= 0 ? '+' : ''}{balance.toLocaleString('id-ID')}
             </p>
           </div>
