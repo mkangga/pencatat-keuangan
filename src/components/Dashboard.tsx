@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useRef } from 'react';
 import { User, updateProfile } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, limit, deleteDoc, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -22,6 +22,7 @@ import Categories from './Categories';
 import { BellRing } from 'lucide-react';
 import { MobileDrawer } from './MobileDrawer';
 import BottomNav from './BottomNav';
+import FloatingActionButton from './FloatingActionButton';
 import { isToday, isSameMonth, parseISO } from 'date-fns';
 import { checkAndNotify } from '../services/notificationService';
 
@@ -61,6 +62,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
   
   // Sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
 
   // Sorting state for recent transactions
   const [incomeSort, setIncomeSort] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
@@ -70,6 +72,9 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
 
   useEffect(() => {
     setSearchQuery('');
+    if (mainRef.current) {
+      mainRef.current.scrollTo(0, 0);
+    }
   }, [location.pathname]);
 
   useEffect(() => {
@@ -298,7 +303,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
           toggleDarkMode={toggleDarkMode}
         />
         
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8 pb-24">
+        <main ref={mainRef} className="flex-1 overflow-y-auto p-6 lg:p-8 pb-24">
           <Routes>
             <Route path="/" element={
               <div className="max-w-7xl mx-auto space-y-8">
@@ -469,6 +474,13 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
         categories={categories}
         onEdit={openEditModal}
         onDelete={handleDeleteTransaction}
+      />
+
+      <FloatingActionButton 
+        user={user}
+        wallets={wallets}
+        categories={categories}
+        transactions={transactions}
       />
     </div>
   );
