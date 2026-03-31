@@ -30,7 +30,6 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: Home },
-    { name: 'Transaksi', path: '/transaksi', icon: ReceiptText },
     { name: 'Uang Masuk', path: '/uang-masuk', icon: PlusCircle },
     { name: 'Uang Keluar', path: '/uang-keluar', icon: MinusCircle },
     { name: 'Log Aktivitas', path: '/log-aktivitas', icon: ClipboardList },

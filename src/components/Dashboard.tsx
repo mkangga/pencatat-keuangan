@@ -11,7 +11,6 @@ import TransactionList from './TransactionList';
 import AddTransactionModal from './AddTransactionModal';
 import ExportModal from './ExportModal';
 import ActivityLog from './ActivityLog';
-import Transaksi from './Transaksi';
 import TransactionDetailModal from './TransactionDetailModal';
 import Debts from './Debts';
 import Goals from './Goals';
@@ -19,11 +18,12 @@ import Settings from './Settings';
 import Analysis from './Analysis';
 import Wallets from './Wallets';
 import Categories from './Categories';
-import { BellRing } from 'lucide-react';
+import { BellRing, Calendar } from 'lucide-react';
 import { MobileDrawer } from './MobileDrawer';
 import BottomNav from './BottomNav';
 import FloatingActionButton from './FloatingActionButton';
-import { isToday, isSameMonth, parseISO } from 'date-fns';
+import { isToday, isSameMonth, parseISO, isSameDay, format } from 'date-fns';
+import { id } from 'date-fns/locale';
 import { checkAndNotify } from '../services/notificationService';
 
 interface DashboardProps {
@@ -63,10 +63,6 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
   // Sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
-
-  // Sorting state for recent transactions
-  const [incomeSort, setIncomeSort] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
-  const [expenseSort, setExpenseSort] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
 
   const location = useLocation();
 
@@ -167,13 +163,49 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
     (t.category && t.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const searchedIncomeTransactions = searchedTransactions.filter(t => t.type === 'income');
-  const searchedExpenseTransactions = searchedTransactions.filter(t => t.type === 'expense');
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+
+  const safeParseDate = (dateStr: string) => {
+    try {
+      const parsed = parseISO(dateStr);
+      return isNaN(parsed.getTime()) ? new Date() : parsed;
+    } catch {
+      return new Date();
+    }
+  };
+
+  const filteredByDateTransactions = transactions.filter(t => 
+    isSameDay(safeParseDate(t.date), safeParseDate(selectedDate))
+  );
+
+  const searchedFilteredTransactions = searchedTransactions.filter(t => 
+    isSameDay(safeParseDate(t.date), safeParseDate(selectedDate))
+  );
+
+  const incomeTransactionsDaily = filteredByDateTransactions.filter(t => t.type === 'income' && t.category !== 'Pindah Saldo');
+  const expenseTransactionsDaily = filteredByDateTransactions.filter(t => t.type === 'expense' && t.category !== 'Pindah Saldo');
+  
+  const dailyTransactions = [...searchedFilteredTransactions].sort((a, b) => {
+    const dateA = safeParseDate(a.date).getTime();
+    const dateB = safeParseDate(b.date).getTime();
+    return dateB - dateA;
+  });
+
+  const totalIncomeDaily = incomeTransactionsDaily.reduce((acc, curr) => acc + curr.amount, 0);
+  const totalExpenseDaily = expenseTransactionsDaily.reduce((acc, curr) => acc + curr.amount, 0);
+  const balanceDaily = totalIncomeDaily - totalExpenseDaily;
+
+  // Sorting state for recent transactions
+  const [incomeSort, setIncomeSort] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
+  const [expenseSort, setExpenseSort] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
+
+  const searchedIncomeTransactions = searchedTransactions.filter(t => t.type === 'income' && t.category !== 'Pindah Saldo');
+  const searchedExpenseTransactions = searchedTransactions.filter(t => t.type === 'expense' && t.category !== 'Pindah Saldo');
 
   // For Summary Cards (Unfiltered by search)
   const allTransactions = transactions;
-  const allIncomeTransactions = allTransactions.filter(t => t.type === 'income');
-  const allExpenseTransactions = allTransactions.filter(t => t.type === 'expense');
+  const allIncomeTransactions = allTransactions.filter(t => t.type === 'income' && t.category !== 'Pindah Saldo');
+  const allExpenseTransactions = allTransactions.filter(t => t.type === 'expense' && t.category !== 'Pindah Saldo');
 
   const now = new Date();
 
@@ -306,63 +338,61 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
         <main ref={mainRef} className="flex-1 overflow-y-auto p-6 lg:p-8 pb-24">
           <Routes>
             <Route path="/" element={
-              <div className="max-w-7xl mx-auto space-y-8">
-                {showReminder && (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40 rounded-2xl p-4 flex items-start gap-3 transition-colors duration-300">
-                    <div className="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 p-2 rounded-full mt-0.5">
-                      <BellRing size={18} />
+              <div className="max-w-7xl mx-auto space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl">
+                      <Calendar size={20} />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-blue-800 dark:text-blue-300">Pengingat Harian</h4>
-                      <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">Anda belum mencatat transaksi apapun dalam 24 jam terakhir. Yuk catat pengeluaran atau pemasukan Anda hari ini!</p>
+                      <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400">Pilih Tanggal</h2>
+                      <p className="text-sm font-bold text-gray-800 dark:text-gray-100">
+                        {format(safeParseDate(selectedDate), 'EEEE, d MMM yyyy', { locale: id })}
+                      </p>
                     </div>
                   </div>
-                )}
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 font-sans">Dashboard Keuangan</h1>
-                  <SummaryCards 
-                    incomeToday={incomeToday} 
-                    expenseToday={expenseToday} 
-                    incomeMonth={incomeMonth} 
-                    expenseMonth={expenseMonth} 
-                    balance={balance} 
+                  <input 
+                    type="date" 
+                    value={selectedDate} 
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500 text-gray-800 dark:text-gray-100 transition-all"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Pemasukan Terakhir</h2>
-                      <select 
-                        value={incomeSort}
-                        onChange={(e) => setIncomeSort(e.target.value as any)}
-                        className="text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500 text-gray-700 dark:text-gray-300"
-                      >
-                        <option value="date-desc">Terbaru</option>
-                        <option value="date-asc">Terlama</option>
-                        <option value="amount-desc">Tertinggi</option>
-                        <option value="amount-asc">Terendah</option>
-                      </select>
-                    </div>
-                    <TransactionList transactions={sortTransactions(searchedIncomeTransactions, incomeSort).slice(0, 5)} type="income" onEdit={openEditModal} onViewDetail={openDetailModal} />
+                <div className="bg-gradient-to-br from-purple-600 to-indigo-700 text-white p-6 rounded-3xl shadow-xl border border-purple-400/20">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-sm font-semibold tracking-wide uppercase opacity-80">
+                      Ringkasan Transaksi
+                    </h2>
+                    <span className="text-xs bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm font-medium">
+                      {format(safeParseDate(selectedDate), 'd MMM yyyy', { locale: id })}
+                    </span>
                   </div>
                   
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Pengeluaran Terakhir</h2>
-                      <select 
-                        value={expenseSort}
-                        onChange={(e) => setExpenseSort(e.target.value as any)}
-                        className="text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500 text-gray-700 dark:text-gray-300"
-                      >
-                        <option value="date-desc">Terbaru</option>
-                        <option value="date-asc">Terlama</option>
-                        <option value="amount-desc">Tertinggi</option>
-                        <option value="amount-asc">Terendah</option>
-                      </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+                    <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 min-w-0">
+                      <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Pemasukan</p>
+                      <p className="text-sm sm:text-lg font-extrabold break-words text-right sm:text-center">
+                        + {totalIncomeDaily.toLocaleString('id-ID')}
+                      </p>
                     </div>
-                    <TransactionList transactions={sortTransactions(searchedExpenseTransactions, expenseSort).slice(0, 5)} type="expense" onEdit={openEditModal} onViewDetail={openDetailModal} />
+                    <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 border-t border-white/10 sm:border-t-0 sm:border-x sm:border-white/10 min-w-0">
+                      <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Pengeluaran</p>
+                      <p className="text-sm sm:text-lg font-extrabold break-words text-right sm:text-center">
+                        - {totalExpenseDaily.toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 border-t border-white/10 sm:border-t-0 min-w-0">
+                      <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Selisih</p>
+                      <p className={`text-sm sm:text-lg font-extrabold break-words text-right sm:text-center ${balanceDaily >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                        {balanceDaily >= 0 ? '+' : ''}{balanceDaily.toLocaleString('id-ID')}
+                      </p>
+                    </div>
                   </div>
+                </div>
+                
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
+                  <TransactionList transactions={dailyTransactions} type="all" onEdit={openEditModal} onViewDetail={openDetailModal} />
                 </div>
               </div>
             } />
@@ -375,7 +405,6 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                 </div>
               </div>
             } />
-            <Route path="/transaksi" element={<Transaksi transactions={transactions} searchedTransactions={searchedTransactions} onEdit={openEditModal} onViewDetail={openDetailModal} />} />
             <Route path="/uang-keluar" element={
               <div className="max-w-7xl mx-auto space-y-6">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Semua Pengeluaran</h1>
@@ -386,7 +415,16 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
               </div>
             } />
             <Route path="/log-aktivitas" element={<ActivityLog transactions={searchedTransactions} onViewDetail={openDetailModal} />} />
-            <Route path="/analisis" element={<Analysis transactions={transactions} />} />
+            <Route path="/analisis" element={
+              <Analysis 
+                transactions={transactions}
+                incomeToday={incomeToday}
+                expenseToday={expenseToday}
+                incomeMonth={incomeMonth}
+                expenseMonth={expenseMonth}
+                balance={balance}
+              />
+            } />
             <Route path="/hutang-piutang" element={<Debts user={user} />} />
             <Route path="/masa-depan" element={<Goals user={user} />} />
             <Route path="/dompet-rekening" element={<Wallets user={user} />} />

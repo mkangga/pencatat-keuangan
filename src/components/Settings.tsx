@@ -16,7 +16,11 @@ export default function Settings({ user, appUser }: { user: User, appUser: AppUs
 
   useEffect(() => {
     if (appUser?.bottomNavTabs) {
-      setSelectedTabs(appUser.bottomNavTabs);
+      // Filter out any saved tabs that no longer exist in ALL_NAV_ITEMS (e.g., deleted pages)
+      const validTabs = appUser.bottomNavTabs.filter(tab => 
+        ALL_NAV_ITEMS.some(item => item.name === tab)
+      );
+      setSelectedTabs(validTabs);
     }
   }, [appUser]);
 
@@ -48,9 +52,9 @@ export default function Settings({ user, appUser }: { user: User, appUser: AppUs
   const handleTabToggle = async (tabName: string) => {
     let newTabs = [...selectedTabs];
     if (newTabs.includes(tabName)) {
-      // Don't allow less than 2 tabs
-      if (newTabs.length <= 2) {
-        alert('Minimal harus ada 2 tab di navigasi bawah.');
+      // Don't allow less than 1 tab
+      if (newTabs.length <= 1) {
+        alert('Minimal harus ada 1 tab di navigasi bawah.');
         return;
       }
       newTabs = newTabs.filter(t => t !== tabName);

@@ -6,7 +6,6 @@ import {
 
 export const ALL_NAV_ITEMS = [
   { name: 'Dashboard', path: '/', icon: Home },
-  { name: 'Transaksi', path: '/transaksi', icon: ReceiptText },
   { name: 'Masuk', path: '/uang-masuk', icon: PlusCircle },
   { name: 'Keluar', path: '/uang-keluar', icon: MinusCircle },
   { name: 'Analisis', path: '/analisis', icon: PieChart },
@@ -24,7 +23,7 @@ interface BottomNavProps {
 }
 
 export default function BottomNav({ tabs }: BottomNavProps) {
-  const defaultTabs = ['Dashboard', 'Transaksi', 'Masuk', 'Keluar', 'Analisis'];
+  const defaultTabs = ['Dashboard', 'Masuk', 'Keluar', 'Analisis'];
   const activeTabs = tabs || defaultTabs;
 
   const navItems = ALL_NAV_ITEMS.filter(item => activeTabs.includes(item.name));

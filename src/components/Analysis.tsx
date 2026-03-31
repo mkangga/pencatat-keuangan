@@ -3,10 +3,27 @@ import { Transaction } from '../types';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { subMonths, isAfter, format, isSameMonth, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
+import SummaryCards from './SummaryCards';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
-export default function Analysis({ transactions }: { transactions: Transaction[] }) {
+interface AnalysisProps {
+  transactions: Transaction[];
+  incomeToday: number;
+  expenseToday: number;
+  incomeMonth: number;
+  expenseMonth: number;
+  balance: number;
+}
+
+export default function Analysis({ 
+  transactions,
+  incomeToday,
+  expenseToday,
+  incomeMonth,
+  expenseMonth,
+  balance
+}: AnalysisProps) {
   const months = useMemo(() => {
     const months = [];
     for (let i = 0; i < 12; i++) {
@@ -18,7 +35,10 @@ export default function Analysis({ transactions }: { transactions: Transaction[]
   const [selectedMonth, setSelectedMonth] = useState(months[0]);
 
   const { expensePieData, incomePieData, incomeExpenseData } = useMemo(() => {
-    const filteredTransactions = transactions.filter(tx => isSameMonth(parseISO(tx.date), selectedMonth));
+    const filteredTransactions = transactions.filter(tx => 
+      isSameMonth(parseISO(tx.date), selectedMonth) && 
+      tx.category !== 'Pindah Saldo'
+    );
 
     let income = 0;
     let expense = 0;
@@ -62,7 +82,7 @@ export default function Analysis({ transactions }: { transactions: Transaction[]
       let expense = 0;
       
       transactions.forEach(tx => {
-        if (isSameMonth(parseISO(tx.date), monthDate)) {
+        if (isSameMonth(parseISO(tx.date), monthDate) && tx.category !== 'Pindah Saldo') {
           if (tx.type === 'income') income += tx.amount;
           else expense += tx.amount;
         }
@@ -130,8 +150,19 @@ export default function Analysis({ transactions }: { transactions: Transaction[]
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-10">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Analisis Keuangan</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 font-sans">Analisis Keuangan</h1>
+        <SummaryCards 
+          incomeToday={incomeToday} 
+          expenseToday={expenseToday} 
+          incomeMonth={incomeMonth} 
+          expenseMonth={expenseMonth} 
+          balance={balance} 
+        />
+      </div>
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 font-sans">Grafik Analisis</h2>
         <select 
           value={format(selectedMonth, 'yyyy-MM')} 
           onChange={(e) => setSelectedMonth(parseISO(e.target.value + '-01'))}
