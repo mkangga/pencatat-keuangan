@@ -14,8 +14,12 @@ service cloud.firestore {
 
     function isDocOwner() {
       return isAuthenticated() && 
-        (resource == null || resource.data.userId == request.auth.uid) &&
-        (request.resource == null || request.resource.data.userId == request.auth.uid);
+        (resource == null || resource.data.userId == request.auth.uid);
+    }
+
+    function isNewDocOwner() {
+      return isAuthenticated() && 
+        (request.resource != null && request.resource.data.userId == request.auth.uid);
     }
 
     function isAdmin() {
@@ -32,23 +36,38 @@ service cloud.firestore {
     }
 
     match /transactions/{docId} {
-      allow read, write: if isDocOwner() || isAdmin();
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isNewDocOwner() || isAdmin();
+      allow update: if (isDocOwner() && isNewDocOwner()) || isAdmin();
+      allow delete: if isDocOwner() || isAdmin();
     }
 
     match /debts/{docId} {
-      allow read, write: if isDocOwner() || isAdmin();
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isNewDocOwner() || isAdmin();
+      allow update: if (isDocOwner() && isNewDocOwner()) || isAdmin();
+      allow delete: if isDocOwner() || isAdmin();
     }
 
     match /goals/{docId} {
-      allow read, write: if isDocOwner() || isAdmin();
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isNewDocOwner() || isAdmin();
+      allow update: if (isDocOwner() && isNewDocOwner()) || isAdmin();
+      allow delete: if isDocOwner() || isAdmin();
     }
 
     match /wallets/{docId} {
-      allow read, write: if isDocOwner() || isAdmin();
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isNewDocOwner() || isAdmin();
+      allow update: if (isDocOwner() && isNewDocOwner()) || isAdmin();
+      allow delete: if isDocOwner() || isAdmin();
     }
 
     match /categories/{docId} {
-      allow read, write: if isDocOwner() || isAdmin();
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isNewDocOwner() || isAdmin();
+      allow update: if (isDocOwner() && isNewDocOwner()) || isAdmin();
+      allow delete: if isDocOwner() || isAdmin();
     }
   }
 }

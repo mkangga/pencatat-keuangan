@@ -43,7 +43,11 @@ export default function Auth({ isDarkMode, toggleDarkMode }: AuthProps) {
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        // User closed the popup or another request was made, no need to show an error alert
+        return;
+      }
       console.error('Error signing in:', error);
       alert('Gagal masuk. Silakan coba lagi.');
     }
