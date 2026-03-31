@@ -3,7 +3,20 @@ import { getAuth } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 
 // Import the Firebase configuration
-import firebaseConfig from '../firebase-applet-config.json';
+// We use a dynamic-like check for the config file to avoid build failures in external environments
+// where the file might be missing (e.g., when deployed from GitHub).
+const configs = import.meta.glob('../firebase-applet-config.json', { eager: true, import: 'default' });
+const configFromFile = configs['../firebase-applet-config.json'] as any;
+
+const firebaseConfig = {
+  apiKey: configFromFile?.apiKey || import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: configFromFile?.authDomain || import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: configFromFile?.projectId || import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: configFromFile?.storageBucket || import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: configFromFile?.messagingSenderId || import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: configFromFile?.appId || import.meta.env.VITE_FIREBASE_APP_ID,
+  firestoreDatabaseId: configFromFile?.firestoreDatabaseId || import.meta.env.VITE_FIREBASE_DATABASE_ID
+};
 
 export enum OperationType {
   CREATE = 'create',

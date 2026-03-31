@@ -71,7 +71,7 @@ export default function Header({
         </div>
       </div>
 
-      <div className="flex-1 max-w-md mx-4 hidden sm:block">
+      <div className="flex-1 max-w-md mx-4">
         {showSearch && (
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
@@ -87,14 +87,6 @@ export default function Header({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        <button
-          onClick={toggleDarkMode}
-          className="p-2 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-xl transition-all"
-          title={isDarkMode ? "Mode Terang" : "Mode Gelap"}
-        >
-          {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-
         <button
           onClick={onExport}
           title="Ekspor Data"

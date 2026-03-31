@@ -165,9 +165,10 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
   const searchedIncomeTransactions = searchedTransactions.filter(t => t.type === 'income');
   const searchedExpenseTransactions = searchedTransactions.filter(t => t.type === 'expense');
 
-  // For Summary Cards and Dashboard (Unfiltered by search)
-  const allIncomeTransactions = transactions.filter(t => t.type === 'income');
-  const allExpenseTransactions = transactions.filter(t => t.type === 'expense');
+  // For Summary Cards (Unfiltered by search)
+  const allTransactions = transactions;
+  const allIncomeTransactions = allTransactions.filter(t => t.type === 'income');
+  const allExpenseTransactions = allTransactions.filter(t => t.type === 'expense');
 
   const now = new Date();
 
