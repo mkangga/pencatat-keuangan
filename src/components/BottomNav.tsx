@@ -23,7 +23,7 @@ interface BottomNavProps {
 }
 
 export default function BottomNav({ tabs }: BottomNavProps) {
-  const defaultTabs = ['Dashboard', 'Masuk', 'Keluar', 'Analisis'];
+  const defaultTabs = ['Dashboard', 'Masuk', 'Keluar', 'Analisis', 'Riwayat'];
   const activeTabs = tabs || defaultTabs;
 
   const navItems = ALL_NAV_ITEMS.filter(item => activeTabs.includes(item.name));

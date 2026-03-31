@@ -109,7 +109,9 @@ export default function Riwayat({ transactions, onViewDetail }: RiwayatProps) {
                     >
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-gray-700 dark:text-gray-200 text-sm">{tx.category || 'Tanpa Kategori'}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{tx.description}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+                          {format(parseISO(tx.date), 'HH:mm', { locale: id })} • {tx.description}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`font-bold text-sm ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-300'}`}>

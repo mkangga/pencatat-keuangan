@@ -89,7 +89,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
           email: user.email || '',
           photoURL: user.photoURL || '',
           role: 'user',
-          bottomNavTabs: ['Dashboard', 'Transaksi', 'Masuk', 'Keluar', 'Analisis'],
+          bottomNavTabs: ['Dashboard', 'Masuk', 'Keluar', 'Analisis', 'Riwayat'],
           createdAt: new Date().toISOString()
         };
         await setDoc(userDocRef, initialUser);

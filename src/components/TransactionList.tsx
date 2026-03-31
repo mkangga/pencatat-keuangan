@@ -79,7 +79,7 @@ export default function TransactionList({ transactions, type, onEdit, onViewDeta
                 <p className="font-bold text-gray-800 dark:text-gray-100 text-sm break-words">{tx.description}</p>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
                   <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                    {format(safeDate(tx.date), 'HH:mm', { locale: id })}
+                    {format(safeDate(tx.date), 'd MMM yyyy, HH:mm', { locale: id })}
                   </p>
                   {tx.category && (
                     <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-md font-medium">
