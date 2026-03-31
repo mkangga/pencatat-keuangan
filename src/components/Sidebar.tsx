@@ -32,7 +32,7 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
     { name: 'Dashboard', path: '/', icon: Home },
     { name: 'Uang Masuk', path: '/uang-masuk', icon: PlusCircle },
     { name: 'Uang Keluar', path: '/uang-keluar', icon: MinusCircle },
-    { name: 'Log Aktivitas', path: '/log-aktivitas', icon: ClipboardList },
+    { name: 'Riwayat', path: '/riwayat', icon: ClipboardList },
     { name: 'Analisis', path: '/analisis', icon: PieChart },
     { name: 'Hutang/Piutang', path: '/hutang-piutang', icon: CreditCard },
     { name: 'Masa Depan', path: '/masa-depan', icon: TrendingUp },

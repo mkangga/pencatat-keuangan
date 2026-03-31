@@ -10,7 +10,7 @@ import SummaryCards from './SummaryCards';
 import TransactionList from './TransactionList';
 import AddTransactionModal from './AddTransactionModal';
 import ExportModal from './ExportModal';
-import ActivityLog from './ActivityLog';
+import Riwayat from './Riwayat';
 import TransactionDetailModal from './TransactionDetailModal';
 import Debts from './Debts';
 import Goals from './Goals';
@@ -414,7 +414,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                 </div>
               </div>
             } />
-            <Route path="/log-aktivitas" element={<ActivityLog transactions={searchedTransactions} onViewDetail={openDetailModal} />} />
+            <Route path="/riwayat" element={<Riwayat transactions={searchedTransactions} onViewDetail={openDetailModal} />} />
             <Route path="/analisis" element={
               <Analysis 
                 transactions={transactions}

@@ -9,7 +9,7 @@ export const ALL_NAV_ITEMS = [
   { name: 'Masuk', path: '/uang-masuk', icon: PlusCircle },
   { name: 'Keluar', path: '/uang-keluar', icon: MinusCircle },
   { name: 'Analisis', path: '/analisis', icon: PieChart },
-  { name: 'Log', path: '/log-aktivitas', icon: ClipboardList },
+  { name: 'Riwayat', path: '/riwayat', icon: ClipboardList },
   { name: 'Hutang', path: '/hutang-piutang', icon: CreditCard },
   { name: 'Masa Depan', path: '/masa-depan', icon: TrendingUp },
   { name: 'Dompet', path: '/dompet-rekening', icon: Wallet },
