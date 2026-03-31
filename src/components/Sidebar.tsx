@@ -39,18 +39,33 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
     { name: 'Masa Depan', path: '/masa-depan', icon: TrendingUp },
     { name: 'Dompet & Rekening', path: '/dompet-rekening', icon: Wallet },
     { name: 'Kategori Transaksi', path: '/kategori-transaksi', icon: Tags },
-    { name: 'Profil', path: '/profil', icon: UserIcon },
     { name: 'Pengaturan', path: '/pengaturan', icon: Settings },
   ];
 
   return (
     <aside className={`bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex-shrink-0 flex flex-col h-full min-h-0 transition-colors duration-300 ${className}`}>
-      <div className={`p-6 flex items-center gap-3 border-b border-gray-50 dark:border-gray-700 ${isCollapsed ? 'justify-center' : ''}`}>
-        <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-sm shadow-emerald-200">
-          <ReceiptText size={20} />
-        </div>
-        {!isCollapsed && <span className="font-bold text-xl text-emerald-600 dark:text-emerald-500">CatatUang</span>}
-      </div>
+      <NavLink 
+        to="/profil" 
+        onClick={onItemClick}
+        className={`p-4 flex items-center gap-3 border-b border-gray-50 dark:border-gray-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+      >
+        <img 
+          src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'User'}&background=10b981&color=fff`} 
+          alt="Profile" 
+          className="w-10 h-10 rounded-xl shadow-sm object-cover"
+          referrerPolicy="no-referrer"
+        />
+        {!isCollapsed && (
+          <div className="flex flex-col min-w-0">
+            <span className="font-bold text-gray-800 dark:text-gray-100 truncate">
+              {user.displayName || 'User'}
+            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              Lihat Profil
+            </span>
+          </div>
+        )}
+      </NavLink>
 
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 pb-20">
         {navItems.map((item) => {
