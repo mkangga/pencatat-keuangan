@@ -7,7 +7,7 @@ import { Transaction, Wallet, Category, AppUser } from '../types';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import SummaryCards from './SummaryCards';
-import TransactionList from './TransactionList';
+import GroupedTransactionList from './GroupedTransactionList';
 import AddTransactionModal from './AddTransactionModal';
 import ExportModal from './ExportModal';
 import Riwayat from './Riwayat';
@@ -674,27 +674,21 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                   </div>
                 </div>
                 
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
-                  <TransactionList transactions={dailyTransactions} type="all" onEdit={openEditModal} onViewDetail={openDetailModal} />
-                </div>
+                <GroupedTransactionList transactions={dailyTransactions} onEdit={openEditModal} onViewDetail={openDetailModal} />
               </div>
             } />
             <Route path="/uang-masuk" element={
               <div className="max-w-7xl mx-auto space-y-6">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Semua Pemasukan</h1>
                 {renderFilters('income')}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
-                  <TransactionList transactions={applyFilters(searchedIncomeTransactions)} type="income" onEdit={openEditModal} onViewDetail={openDetailModal} />
-                </div>
+                <GroupedTransactionList transactions={applyFilters(searchedIncomeTransactions)} onEdit={openEditModal} onViewDetail={openDetailModal} />
               </div>
             } />
             <Route path="/uang-keluar" element={
               <div className="max-w-7xl mx-auto space-y-6">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Semua Pengeluaran</h1>
                 {renderFilters('expense')}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
-                  <TransactionList transactions={applyFilters(searchedExpenseTransactions)} type="expense" onEdit={openEditModal} onViewDetail={openDetailModal} />
-                </div>
+                <GroupedTransactionList transactions={applyFilters(searchedExpenseTransactions)} onEdit={openEditModal} onViewDetail={openDetailModal} />
               </div>
             } />
             <Route path="/riwayat" element={<Riwayat transactions={searchedTransactions} onViewDetail={openDetailModal} onEdit={openEditModal} />} />

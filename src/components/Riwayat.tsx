@@ -3,7 +3,7 @@ import { Transaction } from '../types';
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { ChevronRight, Search, Filter, PlusCircle, MinusCircle, Calendar, X } from 'lucide-react';
-import TransactionList from './TransactionList';
+import GroupedTransactionList from './GroupedTransactionList';
 
 const safeParseDate = (dateStr: string) => {
   try {
@@ -180,40 +180,41 @@ export default function Riwayat({ transactions, onViewDetail, onEdit }: RiwayatP
       </div>
 
       {/* Transaction List */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300">
+      <div className="space-y-8">
         {filteredTransactions.length > 0 ? (
-          <TransactionList 
+          <GroupedTransactionList 
             transactions={filteredTransactions} 
-            type="all" 
             onViewDetail={onViewDetail} 
             onEdit={onEdit} 
           />
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-            <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-300 dark:text-gray-700">
-              <Calendar size={32} />
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300">
+            <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+              <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-300 dark:text-gray-700">
+                <Calendar size={32} />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-gray-800 dark:text-gray-100">Tidak ada riwayat</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
+                  {searchQuery || filterType !== 'all' || dateFilter !== 'all' 
+                    ? "Tidak ada transaksi yang sesuai dengan filter pencarian Anda." 
+                    : "Mulai catat transaksi Anda untuk melihat riwayat di sini."}
+                </p>
+              </div>
+              {(searchQuery || filterType !== 'all' || filterCategory !== '' || dateFilter !== 'all') && (
+                <button 
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilterType('all');
+                    setFilterCategory('');
+                    setDateFilter('all');
+                  }}
+                  className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline"
+                >
+                  Reset Filter
+                </button>
+              )}
             </div>
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-gray-800 dark:text-gray-100">Tidak ada riwayat</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
-                {searchQuery || filterType !== 'all' || dateFilter !== 'all' 
-                  ? "Tidak ada transaksi yang sesuai dengan filter pencarian Anda." 
-                  : "Mulai catat transaksi Anda untuk melihat riwayat di sini."}
-              </p>
-            </div>
-            {(searchQuery || filterType !== 'all' || filterCategory !== '' || dateFilter !== 'all') && (
-              <button 
-                onClick={() => {
-                  setSearchQuery('');
-                  setFilterType('all');
-                  setFilterCategory('');
-                  setDateFilter('all');
-                }}
-                className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline"
-              >
-                Reset Filter
-              </button>
-            )}
           </div>
         )}
       </div>
