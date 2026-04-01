@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent, useRef } from 'react';
+import { useState, useEffect, FormEvent, useRef, useMemo } from 'react';
 import { User, updateProfile } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, limit, deleteDoc, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -18,7 +18,7 @@ import Settings from './Settings';
 import Analysis from './Analysis';
 import Wallets from './Wallets';
 import Categories from './Categories';
-import { BellRing, Calendar, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { BellRing, Calendar, ChevronLeft, ChevronRight, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { MobileDrawer } from './MobileDrawer';
 import BottomNav from './BottomNav';
 import FloatingActionButton from './FloatingActionButton';
@@ -68,6 +68,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
 
   useEffect(() => {
     setSearchQuery('');
+    setFilterCategory('');
     if (mainRef.current) {
       mainRef.current.scrollTo(0, 0);
     }
@@ -168,6 +169,45 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
   const [isRangeMode, setIsRangeMode] = useState(false);
   const [startDateRange, setStartDateRange] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [endDateRange, setEndDateRange] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [isFilterExpanded, setIsFilterExpanded] = useState(true);
+  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
+
+  // Filtered categories based on filterType
+  const filteredCategoryNames = useMemo(() => {
+    // Get categories from the categories collection
+    let fromCategories = categories;
+    if (filterType === 'income') {
+      fromCategories = categories.filter(c => c.type === 'income');
+    } else if (filterType === 'expense') {
+      fromCategories = categories.filter(c => c.type === 'expense');
+    }
+    
+    // Also get categories that exist in transactions but might not be in categories collection (like 'Koreksi Saldo')
+    const fromTransactions = transactions
+      .filter(t => filterType === 'all' || t.type === filterType)
+      .map(t => t.category || 'Tanpa Kategori');
+    
+    // Combine both sources
+    const combinedNames = [
+      ...fromCategories.map(c => c.name),
+      ...fromTransactions
+    ];
+    
+    // Get unique names and sort them
+    const uniqueNames = Array.from(new Set(combinedNames)) as string[];
+    return uniqueNames.sort((a, b) => a.localeCompare(b));
+  }, [categories, transactions, filterType]);
+
+  // Reset category filter if it's no longer valid for the selected type
+  useEffect(() => {
+    if (filterCategory === '') return;
+    
+    const isValid = filteredCategoryNames.includes(filterCategory);
+    
+    if (!isValid) {
+      setFilterCategory('');
+    }
+  }, [filterType, filteredCategoryNames, filterCategory]);
 
   const safeParseDate = (dateStr: string) => {
     try {
@@ -180,22 +220,50 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
 
   const filteredByDateTransactions = transactions.filter(t => {
     const tDate = safeParseDate(t.date);
+    
+    // Date filter
+    let dateMatch = false;
     if (isRangeMode) {
       const start = startOfDay(safeParseDate(startDateRange));
       const end = endOfDay(safeParseDate(endDateRange));
-      return isWithinInterval(tDate, { start, end });
+      dateMatch = isWithinInterval(tDate, { start, end });
+    } else {
+      dateMatch = isSameDay(tDate, safeParseDate(selectedDate));
     }
-    return isSameDay(tDate, safeParseDate(selectedDate));
+    
+    if (!dateMatch) return false;
+
+    // Type filter
+    if (filterType !== 'all' && t.type !== filterType) return false;
+
+    // Category filter
+    if (filterCategory && t.category !== filterCategory) return false;
+
+    return true;
   });
 
   const searchedFilteredTransactions = searchedTransactions.filter(t => {
     const tDate = safeParseDate(t.date);
+    
+    // Date filter
+    let dateMatch = false;
     if (isRangeMode) {
       const start = startOfDay(safeParseDate(startDateRange));
       const end = endOfDay(safeParseDate(endDateRange));
-      return isWithinInterval(tDate, { start, end });
+      dateMatch = isWithinInterval(tDate, { start, end });
+    } else {
+      dateMatch = isSameDay(tDate, safeParseDate(selectedDate));
     }
-    return isSameDay(tDate, safeParseDate(selectedDate));
+    
+    if (!dateMatch) return false;
+
+    // Type filter
+    if (filterType !== 'all' && t.type !== filterType) return false;
+
+    // Category filter
+    if (filterCategory && t.category !== filterCategory) return false;
+
+    return true;
   });
 
   const incomeTransactionsDaily = filteredByDateTransactions.filter(t => t.type === 'income' && t.category !== 'Pindah Saldo');
@@ -295,34 +363,53 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
     });
   };
 
-  const renderFilters = () => (
-    <div className="flex flex-wrap gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
-      <div>
-        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Dari Tanggal</label>
-        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100" />
+  const renderFilters = (type?: 'income' | 'expense') => {
+    const fromCategories = type 
+      ? categories.filter(c => c.type === type)
+      : categories;
+    
+    const fromTransactions = transactions
+      .filter(t => !type || t.type === type)
+      .map(t => t.category || 'Tanpa Kategori');
+
+    const combinedNames = [
+      ...fromCategories.map(c => c.name),
+      ...fromTransactions
+    ];
+    
+    // Get unique names and sort them
+    const uniqueCategoryNames = Array.from(new Set(combinedNames)) as string[];
+    uniqueCategoryNames.sort((a, b) => a.localeCompare(b));
+
+    return (
+      <div className="flex flex-wrap gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Dari Tanggal</label>
+          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sampai Tanggal</label>
+          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Kategori</label>
+          <select 
+            value={filterCategory} 
+            onChange={e => setFilterCategory(e.target.value)} 
+            className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100"
+          >
+            <option value="">Semua kategori...</option>
+            {uniqueCategoryNames.map(name => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-end">
+          <button onClick={() => { setStartDate(''); setEndDate(''); setFilterCategory(''); }} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">Reset Filter</button>
+        </div>
       </div>
-      <div>
-        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sampai Tanggal</label>
-        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100" />
-      </div>
-      <div>
-        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Kategori</label>
-        <select 
-          value={filterCategory} 
-          onChange={e => setFilterCategory(e.target.value)} 
-          className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100"
-        >
-          <option value="">Semua kategori...</option>
-          {categories.map(cat => (
-            <option key={cat.id} value={cat.name}>{cat.name}</option>
-          ))}
-        </select>
-      </div>
-      <div className="flex items-end">
-        <button onClick={() => { setStartDate(''); setEndDate(''); setFilterCategory(''); }} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">Reset Filter</button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const handleUpdateProfile = async (e: FormEvent) => {
     e.preventDefault();
@@ -367,21 +454,36 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
           <Routes>
             <Route path="/" element={
               <div className="max-w-7xl mx-auto space-y-6">
-                <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
+                <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300">
                   <div className="flex flex-col space-y-6">
                     {/* Header Row: Title & Controls */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl">
-                          <Calendar size={22} />
+                      <div className="flex items-center justify-between w-full sm:w-auto">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl">
+                            <Calendar size={22} />
+                          </div>
+                          <div>
+                            <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100">Filter Transaksi</h2>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
+                              {isFilterExpanded ? 'Pilih periode waktu' : (
+                                isRangeMode 
+                                  ? `${format(safeParseDate(startDateRange), 'd MMM')} — ${format(safeParseDate(endDateRange), 'd MMM yyyy', { locale: id })}`
+                                  : format(safeParseDate(selectedDate), 'EEEE, d MMM yyyy', { locale: id })
+                              )}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100">Filter Transaksi</h2>
-                          <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">Pilih periode waktu</p>
-                        </div>
+                        
+                        <button 
+                          onClick={() => setIsFilterExpanded(!isFilterExpanded)}
+                          className="sm:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-400 transition-colors"
+                        >
+                          {isFilterExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </button>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className={`flex items-center gap-2 ${!isFilterExpanded ? 'hidden sm:flex' : 'flex'}`}>
                         <div className="flex bg-gray-100 dark:bg-gray-700/50 p-1 rounded-xl border border-gray-200/50 dark:border-gray-600/30">
                           <button 
                             onClick={() => setIsRangeMode(false)}
@@ -408,81 +510,133 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                           <RotateCcw size={14} />
                           <span className="hidden xs:inline">Hari Ini</span>
                         </button>
+
+                        <button 
+                          onClick={() => setIsFilterExpanded(!isFilterExpanded)}
+                          className="hidden sm:flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-400 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
+                        >
+                          {isFilterExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                        </button>
                       </div>
                     </div>
 
                     {/* Date Selector Row */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-4 border-t border-gray-50 dark:border-gray-700/50">
-                      <div className="flex items-center justify-center lg:justify-start gap-6">
-                        {!isRangeMode ? (
-                          <div className="flex items-center gap-6">
-                            <button 
-                              onClick={() => setSelectedDate(format(subDays(safeParseDate(selectedDate), 1), 'yyyy-MM-dd'))}
-                              className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-2xl transition-all text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-900/50 active:scale-90"
-                            >
-                              <ChevronLeft size={22} />
-                            </button>
-                            
-                            <div className="text-center min-w-[160px]">
-                              <p className="text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-[0.2em] mb-1">
-                                {format(safeParseDate(selectedDate), 'EEEE', { locale: id })}
-                              </p>
-                              <p className="text-lg font-black text-gray-800 dark:text-gray-100 tracking-tight">
-                                {format(safeParseDate(selectedDate), 'd MMM yyyy', { locale: id })}
-                              </p>
-                            </div>
+                    {isFilterExpanded && (
+                      <>
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-4 border-t border-gray-50 dark:border-gray-700/50 animate-in fade-in slide-in-from-top-2 duration-300">
+                          <div className="flex items-center justify-center lg:justify-start gap-6">
+                            {!isRangeMode ? (
+                              <div className="flex items-center gap-6">
+                                <button 
+                                  onClick={() => setSelectedDate(format(subDays(safeParseDate(selectedDate), 1), 'yyyy-MM-dd'))}
+                                  className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-2xl transition-all text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-900/50 active:scale-90"
+                                >
+                                  <ChevronLeft size={22} />
+                                </button>
+                                
+                                <div className="text-center min-w-[160px]">
+                                  <p className="text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-[0.2em] mb-1">
+                                    {format(safeParseDate(selectedDate), 'EEEE', { locale: id })}
+                                  </p>
+                                  <p className="text-lg font-black text-gray-800 dark:text-gray-100 tracking-tight">
+                                    {format(safeParseDate(selectedDate), 'd MMM yyyy', { locale: id })}
+                                  </p>
+                                </div>
 
-                            <button 
-                              onClick={() => setSelectedDate(format(addDays(safeParseDate(selectedDate), 1), 'yyyy-MM-dd'))}
-                              className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-2xl transition-all text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-900/50 active:scale-90"
-                            >
-                              <ChevronRight size={22} />
-                            </button>
+                                <button 
+                                  onClick={() => setSelectedDate(format(addDays(safeParseDate(selectedDate), 1), 'yyyy-MM-dd'))}
+                                  className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-2xl transition-all text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-900/50 active:scale-90"
+                                >
+                                  <ChevronRight size={22} />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center lg:items-start">
+                                <p className="text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-[0.2em] mb-1">Rentang Terpilih</p>
+                                <p className="text-lg font-black text-gray-800 dark:text-gray-100 tracking-tight">
+                                  {format(safeParseDate(startDateRange), 'd MMM', { locale: id })} — {format(safeParseDate(endDateRange), 'd MMM yyyy', { locale: id })}
+                                </p>
+                              </div>
+                            )}
                           </div>
-                        ) : (
-                          <div className="flex flex-col items-center lg:items-start">
-                            <p className="text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-[0.2em] mb-1">Rentang Terpilih</p>
-                            <p className="text-lg font-black text-gray-800 dark:text-gray-100 tracking-tight">
-                              {format(safeParseDate(startDateRange), 'd MMM', { locale: id })} — {format(safeParseDate(endDateRange), 'd MMM yyyy', { locale: id })}
-                            </p>
-                          </div>
-                        )}
-                      </div>
 
-                      <div className="flex items-center gap-3 w-full lg:w-auto">
-                        {isRangeMode ? (
-                          <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-2xl border border-gray-100 dark:border-gray-700 w-full lg:w-auto shadow-inner">
-                            <div className="flex-1 relative">
-                              <input 
-                                type="date" 
-                                value={startDateRange} 
-                                onChange={(e) => setStartDateRange(e.target.value)}
-                                className="w-full pl-2 pr-8 py-1.5 bg-transparent text-sm font-bold outline-none text-gray-800 dark:text-gray-100"
-                              />
-                            </div>
-                            <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
-                            <div className="flex-1 relative">
-                              <input 
-                                type="date" 
-                                value={endDateRange} 
-                                onChange={(e) => setEndDateRange(e.target.value)}
-                                className="w-full pl-2 pr-8 py-1.5 bg-transparent text-sm font-bold outline-none text-gray-800 dark:text-gray-100"
-                              />
+                          <div className="flex items-center gap-3 w-full lg:w-auto">
+                            {isRangeMode ? (
+                              <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-2xl border border-gray-100 dark:border-gray-700 w-full lg:w-auto shadow-inner">
+                                <div className="flex-1 relative">
+                                  <input 
+                                    type="date" 
+                                    value={startDateRange} 
+                                    onChange={(e) => setStartDateRange(e.target.value)}
+                                    className="w-full pl-2 pr-8 py-1.5 bg-transparent text-sm font-bold outline-none text-gray-800 dark:text-gray-100"
+                                  />
+                                </div>
+                                <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
+                                <div className="flex-1 relative">
+                                  <input 
+                                    type="date" 
+                                    value={endDateRange} 
+                                    onChange={(e) => setEndDateRange(e.target.value)}
+                                    className="w-full pl-2 pr-8 py-1.5 bg-transparent text-sm font-bold outline-none text-gray-800 dark:text-gray-100"
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="relative w-full lg:w-64 group">
+                                <input 
+                                  type="date" 
+                                  value={selectedDate} 
+                                  onChange={(e) => setSelectedDate(e.target.value)}
+                                  className="w-full px-5 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-gray-800 dark:text-gray-100 transition-all shadow-inner hover:border-purple-200 dark:hover:border-purple-900/50"
+                                />
+                                <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-purple-500 transition-colors pointer-events-none" size={18} />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Additional Filters Row */}
+                        <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 border-t border-gray-50 dark:border-gray-700/50 animate-in fade-in slide-in-from-top-2 duration-500">
+                          <div className="flex-1 w-full">
+                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 ml-1">Tipe Transaksi</p>
+                            <div className="flex bg-gray-100 dark:bg-gray-700/50 p-1 rounded-xl border border-gray-200/50 dark:border-gray-600/30">
+                              <button 
+                                onClick={() => setFilterType('all')}
+                                className={`flex-1 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all duration-200 ${filterType === 'all' ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                              >
+                                Semua
+                              </button>
+                              <button 
+                                onClick={() => setFilterType('income')}
+                                className={`flex-1 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all duration-200 ${filterType === 'income' ? 'bg-white dark:bg-gray-600 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-emerald-600'}`}
+                              >
+                                Masuk
+                              </button>
+                              <button 
+                                onClick={() => setFilterType('expense')}
+                                className={`flex-1 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all duration-200 ${filterType === 'expense' ? 'bg-white dark:bg-gray-600 text-red-600 dark:text-red-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-red-600'}`}
+                              >
+                                Keluar
+                              </button>
                             </div>
                           </div>
-                        ) : (
-                          <div className="relative w-full lg:w-64 group">
-                            <input 
-                              type="date" 
-                              value={selectedDate} 
-                              onChange={(e) => setSelectedDate(e.target.value)}
-                              className="w-full px-5 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-gray-800 dark:text-gray-100 transition-all shadow-inner hover:border-purple-200 dark:hover:border-purple-900/50"
-                            />
-                            <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-purple-500 transition-colors pointer-events-none" size={18} />
+
+                          <div className="flex-1 w-full">
+                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 ml-1">Kategori</p>
+                            <select 
+                              value={filterCategory} 
+                              onChange={(e) => setFilterCategory(e.target.value)}
+                              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-gray-800 dark:text-gray-100 transition-all shadow-inner"
+                            >
+                              <option value="">Semua Kategori</option>
+                              {filteredCategoryNames.map(name => (
+                                <option key={name} value={name}>{name}</option>
+                              ))}
+                            </select>
                           </div>
-                        )}
-                      </div>
-                    </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -528,7 +682,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
             <Route path="/uang-masuk" element={
               <div className="max-w-7xl mx-auto space-y-6">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Semua Pemasukan</h1>
-                {renderFilters()}
+                {renderFilters('income')}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
                   <TransactionList transactions={applyFilters(searchedIncomeTransactions)} type="income" onEdit={openEditModal} onViewDetail={openDetailModal} />
                 </div>
@@ -537,7 +691,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
             <Route path="/uang-keluar" element={
               <div className="max-w-7xl mx-auto space-y-6">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Semua Pengeluaran</h1>
-                {renderFilters()}
+                {renderFilters('expense')}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
                   <TransactionList transactions={applyFilters(searchedExpenseTransactions)} type="expense" onEdit={openEditModal} onViewDetail={openDetailModal} />
                 </div>
