@@ -19,10 +19,20 @@ export default function Riwayat({ transactions, onViewDetail }: RiwayatProps) {
     }).format(Math.abs(amount));
   };
 
-  const filteredTransactions = transactions.filter(t => 
-    t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (t.category && t.category.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredTransactions = transactions
+    .filter(t => 
+      t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (t.category && t.category.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+    .sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      if (dateB !== dateA) return dateB - dateA;
+      
+      const createdAtA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const createdAtB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return createdAtB - createdAtA;
+    });
 
   // Group by date
   const groupedTransactions = filteredTransactions.reduce((groups: { [key: string]: Transaction[] }, transaction) => {

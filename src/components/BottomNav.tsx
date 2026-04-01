@@ -26,7 +26,9 @@ export default function BottomNav({ tabs }: BottomNavProps) {
   const defaultTabs = ['Dashboard', 'Masuk', 'Keluar', 'Analisis', 'Riwayat'];
   const activeTabs = tabs || defaultTabs;
 
-  const navItems = ALL_NAV_ITEMS.filter(item => activeTabs.includes(item.name));
+  const navItems = activeTabs
+    .map(tabName => ALL_NAV_ITEMS.find(item => item.name === tabName))
+    .filter((item): item is typeof ALL_NAV_ITEMS[0] => !!item);
 
   return (
     <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 flex justify-around items-center py-3 px-1 z-50 rounded-3xl shadow-2xl shadow-emerald-900/10 transition-all duration-300">
