@@ -20,9 +20,17 @@ interface GroupedTransactionListProps {
   onEdit?: (tx: Transaction) => void;
   emptyMessage?: string;
   hideGroupHeader?: boolean;
+  type?: 'all' | 'income' | 'expense';
 }
 
-export default function GroupedTransactionList({ transactions, onViewDetail, onEdit, emptyMessage = "Belum ada data transaksi.", hideGroupHeader = false }: GroupedTransactionListProps) {
+export default function GroupedTransactionList({ 
+  transactions, 
+  onViewDetail, 
+  onEdit, 
+  emptyMessage = "Belum ada data transaksi.", 
+  hideGroupHeader = false,
+  type = 'all'
+}: GroupedTransactionListProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       minimumFractionDigits: 0,
@@ -67,7 +75,7 @@ export default function GroupedTransactionList({ transactions, onViewDetail, onE
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300">
         <TransactionList 
           transactions={transactions} 
-          type="all" 
+          type={type} 
           onViewDetail={onViewDetail} 
           onEdit={onEdit} 
         />
@@ -99,12 +107,20 @@ export default function GroupedTransactionList({ transactions, onViewDetail, onE
                 </div>
               </div>
               <div className="flex gap-3 text-[10px] font-bold items-center">
-                {income > 0 && <span className="text-emerald-600 dark:text-emerald-400">+{formatCurrency(income)}</span>}
-                {expense > 0 && <span className="text-gray-400 dark:text-gray-500">-{formatCurrency(expense)}</span>}
-                <div className="h-3 w-px bg-gray-200 dark:bg-gray-700 mx-0.5" />
-                <span className={income - expense >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-500 dark:text-red-400'}>
-                  {income - expense >= 0 ? '+' : ''}{formatCurrency(income - expense)}
-                </span>
+                {type === 'income' ? (
+                  <span className="text-emerald-600 dark:text-emerald-400">+{formatCurrency(income)}</span>
+                ) : type === 'expense' ? (
+                  <span className="text-red-500 dark:text-red-400">-{formatCurrency(expense)}</span>
+                ) : (
+                  <>
+                    {income > 0 && <span className="text-emerald-600 dark:text-emerald-400">+{formatCurrency(income)}</span>}
+                    {expense > 0 && <span className="text-gray-400 dark:text-gray-500">-{formatCurrency(expense)}</span>}
+                    <div className="h-3 w-px bg-gray-200 dark:bg-gray-700 mx-0.5" />
+                    <span className={income - expense >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-500 dark:text-red-400'}>
+                      {income - expense >= 0 ? '+' : ''}{formatCurrency(income - expense)}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -112,7 +128,7 @@ export default function GroupedTransactionList({ transactions, onViewDetail, onE
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300">
               <TransactionList 
                 transactions={dayTransactions} 
-                type="all" 
+                type={type} 
                 onViewDetail={onViewDetail} 
                 onEdit={onEdit} 
               />

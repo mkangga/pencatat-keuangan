@@ -305,7 +305,25 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
 
   const totalIncome = allIncomeTransactions.reduce((acc, curr) => acc + curr.amount, 0);
   const totalExpense = allExpenseTransactions.reduce((acc, curr) => acc + curr.amount, 0);
-  const balance = totalIncome - totalExpense;
+  
+  const balance = useMemo(() => {
+    if (wallets.length > 0) {
+      const balances: Record<string, number> = {};
+      wallets.forEach(w => balances[w.id] = w.initialBalance || 0);
+      
+      allTransactions.forEach(tx => {
+        if (tx.walletId && balances[tx.walletId] !== undefined) {
+          if (tx.type === 'income') {
+            balances[tx.walletId] += tx.amount;
+          } else {
+            balances[tx.walletId] -= tx.amount;
+          }
+        }
+      });
+      return Object.values(balances).reduce((sum, bal) => sum + bal, 0);
+    }
+    return totalIncome - totalExpense;
+  }, [wallets, allTransactions, totalIncome, totalExpense]);
 
   const sortTransactions = (txs: Transaction[], sortType: string) => {
     return [...txs].sort((a, b) => {
@@ -681,14 +699,14 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
               <div className="max-w-7xl mx-auto space-y-6">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Semua Pemasukan</h1>
                 {renderFilters('income')}
-                <GroupedTransactionList transactions={applyFilters(searchedIncomeTransactions)} onEdit={openEditModal} onViewDetail={openDetailModal} />
+                <GroupedTransactionList transactions={applyFilters(searchedIncomeTransactions)} onEdit={openEditModal} onViewDetail={openDetailModal} type="income" />
               </div>
             } />
             <Route path="/uang-keluar" element={
               <div className="max-w-7xl mx-auto space-y-6">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Semua Pengeluaran</h1>
                 {renderFilters('expense')}
-                <GroupedTransactionList transactions={applyFilters(searchedExpenseTransactions)} onEdit={openEditModal} onViewDetail={openDetailModal} />
+                <GroupedTransactionList transactions={applyFilters(searchedExpenseTransactions)} onEdit={openEditModal} onViewDetail={openDetailModal} type="expense" />
               </div>
             } />
             <Route path="/riwayat" element={<Riwayat transactions={searchedTransactions} onViewDetail={openDetailModal} onEdit={openEditModal} />} />
@@ -702,7 +720,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                 balance={balance}
               />
             } />
-            <Route path="/hutang-piutang" element={<Debts user={user} />} />
+            <Route path="/hutang-piutang" element={<Debts user={user} wallets={wallets} />} />
             <Route path="/masa-depan" element={<Goals user={user} />} />
             <Route path="/dompet-rekening" element={<Wallets user={user} />} />
             <Route path="/kategori-transaksi" element={<Categories user={user} />} />

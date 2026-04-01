@@ -206,7 +206,7 @@ export default function Wallets({ user }: { user: User }) {
                     setCorrectingWallet(wallet);
                     setNewBalance(formatNominal((walletBalances[wallet.id] || 0).toString()));
                   }} 
-                  className="text-gray-300 dark:text-gray-600 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors opacity-0 group-hover:opacity-100"
+                  className="text-gray-300 dark:text-gray-600 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
                   title="Koreksi Saldo"
                 >
                   <RefreshCw size={18} />
@@ -216,7 +216,7 @@ export default function Wallets({ user }: { user: User }) {
                     e.stopPropagation();
                     setDeleteId(wallet.id);
                   }} 
-                  className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                  className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                 >
                   <Trash2 size={18} />
                 </button>

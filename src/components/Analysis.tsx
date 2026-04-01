@@ -33,6 +33,8 @@ export default function Analysis({
   }, []);
 
   const [selectedMonth, setSelectedMonth] = useState(months[0]);
+  const [expenseChartType, setExpenseChartType] = useState<'donut' | 'pie' | null>(null);
+  const [incomeChartType, setIncomeChartType] = useState<'donut' | 'pie' | null>(null);
 
   const { expensePieData, incomePieData, incomeExpenseData } = useMemo(() => {
     const filteredTransactions = transactions.filter(tx => 
@@ -100,49 +102,104 @@ export default function Analysis({
 
   const formatCurrency = (value: number) => `Rp ${new Intl.NumberFormat('id-ID').format(value)}`;
 
-  const renderDonutChart = (data: { name: string; value: number }[], title: string) => (
+  const renderCategoryChart = (
+    data: { name: string; value: number }[],
+    title: string,
+    chartType: 'donut' | 'pie' | null,
+    setChartType: (type: 'donut' | 'pie') => void
+  ) => (
     <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
-      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-6">{title}</h2>
-      <div className="h-[350px] sm:h-[300px] w-full">
-        {data.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="40%"
-                innerRadius={60}
-                outerRadius={90}
-                paddingAngle={5}
-                dataKey="value"
-                stroke="none"
-              >
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip 
-                formatter={(value: number) => formatCurrency(value)} 
-                contentStyle={{ 
-                  borderRadius: '12px', 
-                  border: 'none', 
-                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                  backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
-                  color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937'
-                }} 
-                itemStyle={{ color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937' }}
-              />
-              <Legend 
-                layout="horizontal" 
-                verticalAlign="bottom" 
-                align="center" 
-                iconType="circle"
-                wrapperStyle={{ paddingTop: '20px', fontSize: '12px' }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        ) : (
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{title}</h2>
+        {chartType && data.length > 0 && (
+          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <button
+              onClick={() => setChartType('donut')}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                chartType === 'donut'
+                  ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-gray-100 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+            >
+              Donut
+            </button>
+            <button
+              onClick={() => setChartType('pie')}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                chartType === 'pie'
+                  ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-gray-100 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+            >
+              Pie
+            </button>
+          </div>
+        )}
+      </div>
+      
+      <div className="h-[350px] sm:h-[300px] w-full relative">
+        {data.length === 0 ? (
           <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-500">Belum ada data</div>
+        ) : (
+          <>
+            {!chartType && (
+              <div className="absolute inset-0 z-10 bg-white dark:bg-gray-800 flex flex-col items-center justify-center gap-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-2">Pilih jenis grafik untuk menampilkan data</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setChartType('donut')}
+                    className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+                  >
+                    Tampilkan Donut Chart
+                  </button>
+                  <button
+                    onClick={() => setChartType('pie')}
+                    className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-xl text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                  >
+                    Tampilkan Pie Chart
+                  </button>
+                </div>
+              </div>
+            )}
+            <div className={`w-full h-full transition-opacity duration-300 ${!chartType ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data}
+                    cx="50%"
+                    cy="40%"
+                    outerRadius={90}
+                    {...(chartType === 'donut' ? { innerRadius: 60, paddingAngle: 5 } : {})}
+                    dataKey="value"
+                    stroke={chartType === 'pie' ? (document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff') : 'none'}
+                    strokeWidth={chartType === 'pie' ? 2 : undefined}
+                  >
+                    {data.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: number) => formatCurrency(value)} 
+                    contentStyle={{ 
+                      borderRadius: '12px', 
+                      border: 'none', 
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                      backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+                      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937'
+                    }} 
+                    itemStyle={{ color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937' }}
+                  />
+                  <Legend 
+                    layout="horizontal" 
+                    verticalAlign="bottom" 
+                    align="center" 
+                    iconType="circle"
+                    wrapperStyle={{ paddingTop: '20px', fontSize: '12px' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -261,8 +318,8 @@ export default function Analysis({
             </ResponsiveContainer>
           </div>
         </div>
-        {renderDonutChart(expensePieData, 'Pengeluaran per Kategori')}
-        {renderDonutChart(incomePieData, 'Pemasukan per Kategori')}
+        {renderCategoryChart(expensePieData, 'Pengeluaran per Kategori', expenseChartType, setExpenseChartType)}
+        {renderCategoryChart(incomePieData, 'Pemasukan per Kategori', incomeChartType, setIncomeChartType)}
       </div>
     </div>
   );
