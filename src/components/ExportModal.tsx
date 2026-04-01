@@ -7,8 +7,17 @@ import { X, Download, FileSpreadsheet, FileText, Calendar as CalendarIcon } from
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale/id';
+
+const safeParseDate = (dateStr: string) => {
+  try {
+    const parsed = parseISO(dateStr);
+    return isNaN(parsed.getTime()) ? new Date() : parsed;
+  } catch {
+    return new Date();
+  }
+};
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -61,8 +70,8 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
 
       // Sort in memory to avoid index requirement
       transactions.sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
+        const dateA = safeParseDate(a.date).getTime();
+        const dateB = safeParseDate(b.date).getTime();
         return dateB - dateA;
       });
 
@@ -71,7 +80,7 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
         const start = startOfMonth(new Date());
         const end = endOfMonth(new Date());
         transactions = transactions.filter(tx => {
-          const txDate = new Date(tx.date);
+          const txDate = safeParseDate(tx.date);
           return isWithinInterval(txDate, { start, end });
         });
       } else if (filter === 'date_range') {
@@ -80,7 +89,7 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
         const end = new Date(endDate);
         end.setHours(23, 59, 59, 999);
         transactions = transactions.filter(tx => {
-          const txDate = new Date(tx.date);
+          const txDate = safeParseDate(tx.date);
           return isWithinInterval(txDate, { start, end });
         });
       }
@@ -91,7 +100,7 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
         let formattedDate = '-';
         try {
           if (tx.date) {
-            formattedDate = format(new Date(tx.date), 'dd-MM-yyyy HH:mm', { locale: id });
+            formattedDate = format(safeParseDate(tx.date), 'dd-MM-yyyy HH:mm', { locale: id });
           }
         } catch (e) {
           console.error("Error formatting date:", tx.date, e);

@@ -36,6 +36,7 @@ export interface Wallet {
   id: string;
   userId: string;
   name: string;
+  initialBalance?: number;
   createdAt: string;
 }
 

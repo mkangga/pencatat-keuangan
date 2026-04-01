@@ -6,6 +6,8 @@ import { Wallet as WalletType, Transaction } from '../types';
 import { Wallet, Trash2, RefreshCw, X } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 import { motion, AnimatePresence } from 'motion/react';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
 export default function Wallets({ user }: { user: User }) {
   const [wallets, setWallets] = useState<WalletType[]>([]);
@@ -15,6 +17,7 @@ export default function Wallets({ user }: { user: User }) {
   const [loading, setLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [correctingWallet, setCorrectingWallet] = useState<WalletType | null>(null);
+  const [selectedWallet, setSelectedWallet] = useState<WalletType | null>(null);
   const [newBalance, setNewBalance] = useState('');
 
   useEffect(() => {
@@ -39,7 +42,7 @@ export default function Wallets({ user }: { user: User }) {
 
   const walletBalances = useMemo(() => {
     const balances: Record<string, number> = {};
-    wallets.forEach(w => balances[w.id] = 0);
+    wallets.forEach(w => balances[w.id] = w.initialBalance || 0);
     
     transactions.forEach(tx => {
       if (tx.walletId && balances[tx.walletId] !== undefined) {
@@ -52,6 +55,10 @@ export default function Wallets({ user }: { user: User }) {
     });
     return balances;
   }, [wallets, transactions]);
+
+  const totalSaldo = useMemo(() => {
+    return Object.values(walletBalances).reduce((sum: number, bal: number) => sum + bal, 0);
+  }, [walletBalances]);
 
   const formatCurrency = (amount: number) => {
     const formatted = new Intl.NumberFormat('id-ID', {
@@ -73,6 +80,15 @@ export default function Wallets({ user }: { user: User }) {
     return new Intl.NumberFormat('id-ID').format(Number(number));
   };
 
+  const safeDate = (dateVal: any) => {
+    if (!dateVal) return new Date();
+    if (typeof dateVal.toDate === 'function') {
+      return dateVal.toDate();
+    }
+    const d = new Date(dateVal);
+    return isNaN(d.getTime()) ? new Date() : d;
+  };
+
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -80,28 +96,12 @@ export default function Wallets({ user }: { user: User }) {
     setLoading(true);
     try {
       const walletRef = doc(collection(db, 'wallets'));
-      setDoc(walletRef, {
+      await setDoc(walletRef, {
         userId: user.uid,
         name: name.trim(),
+        initialBalance: numericBalance,
         createdAt: serverTimestamp()
-      }).catch(error => {
-        handleFirestoreError(error, OperationType.WRITE, 'wallets');
       });
-
-      if (numericBalance > 0) {
-        addDoc(collection(db, 'transactions'), {
-          userId: user.uid,
-          type: 'income',
-          amount: numericBalance,
-          description: `Saldo Awal: ${name.trim()}`,
-          category: 'Saldo Awal',
-          walletId: walletRef.id,
-          date: new Date(),
-          createdAt: serverTimestamp()
-        }).catch(error => {
-          handleFirestoreError(error, OperationType.WRITE, 'transactions');
-        });
-      }
 
       setName('');
       setInitialBalance('0');
@@ -161,7 +161,15 @@ export default function Wallets({ user }: { user: User }) {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 font-sans">Dompet & Rekening</h1>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Dompet & Rekening</h1>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Total Saldo</span>
+          <span className={`text-3xl font-black tracking-tight ${totalSaldo >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+            {formatCurrency(totalSaldo)}
+          </span>
+        </div>
+      </div>
       
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-8 transition-colors duration-300">
         <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Tambah Dompet/Rekening Baru</h2>
@@ -182,14 +190,19 @@ export default function Wallets({ user }: { user: User }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {wallets.map(wallet => (
-          <div key={wallet.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 flex flex-col justify-between group hover:shadow-md dark:hover:shadow-gray-900/50 transition-all duration-300">
+          <div 
+            key={wallet.id} 
+            onClick={() => setSelectedWallet(wallet)}
+            className="cursor-pointer bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 flex flex-col justify-between group hover:shadow-md dark:hover:shadow-gray-900/50 transition-all duration-300"
+          >
             <div className="flex items-start justify-between mb-4">
               <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400 rounded-full flex items-center justify-center">
                 <Wallet size={24} />
               </div>
               <div className="flex gap-2">
                 <button 
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setCorrectingWallet(wallet);
                     setNewBalance(formatNominal((walletBalances[wallet.id] || 0).toString()));
                   }} 
@@ -198,7 +211,13 @@ export default function Wallets({ user }: { user: User }) {
                 >
                   <RefreshCw size={18} />
                 </button>
-                <button onClick={() => setDeleteId(wallet.id)} className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteId(wallet.id);
+                  }} 
+                  className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                >
                   <Trash2 size={18} />
                 </button>
               </div>
@@ -228,6 +247,64 @@ export default function Wallets({ user }: { user: User }) {
       />
 
       <AnimatePresence>
+        {selectedWallet && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700"
+            >
+              <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between shrink-0">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{selectedWallet.name}</h3>
+                  <p className={`text-sm font-semibold mt-1 ${walletBalances[selectedWallet.id] >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {formatCurrency(walletBalances[selectedWallet.id] || 0)}
+                  </p>
+                </div>
+                <button onClick={() => setSelectedWallet(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-400">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto flex-1">
+                {(() => {
+                  const walletTxs = transactions
+                    .filter(t => t.walletId === selectedWallet.id)
+                    .sort((a, b) => safeDate(b.date).getTime() - safeDate(a.date).getTime());
+
+                  if (walletTxs.length === 0) {
+                    return (
+                      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <Wallet size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+                        <p>Belum ada transaksi untuk dompet ini.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-4">
+                      {walletTxs.map(tx => (
+                        <div key={tx.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800">
+                          <div>
+                            <p className="font-semibold text-gray-800 dark:text-gray-200">{tx.category || 'Tanpa Kategori'}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {format(safeDate(tx.date), 'd MMM yyyy, HH:mm', { locale: id })}
+                              {tx.description && ` • ${tx.description}`}
+                            </p>
+                          </div>
+                          <span className={`font-bold ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {correctingWallet && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <motion.div

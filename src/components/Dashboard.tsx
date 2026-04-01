@@ -121,7 +121,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
       setTransactions(txs);
       
       if (txs.length > 0) {
-        const lastTxDateObj = new Date(txs[0].createdAt || txs[0].date);
+        const lastTxDateObj = safeParseDate(txs[0].createdAt || txs[0].date);
         const lastTxTime = lastTxDateObj.getTime();
         const now = new Date().getTime();
         const hoursSinceLastTx = (now - lastTxTime) / (1000 * 60 * 60);
@@ -274,8 +274,8 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
     const dateB = safeParseDate(b.date).getTime();
     if (dateB !== dateA) return dateB - dateA;
     
-    const createdAtA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const createdAtB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    const createdAtA = a.createdAt ? safeParseDate(a.createdAt).getTime() : 0;
+    const createdAtB = b.createdAt ? safeParseDate(b.createdAt).getTime() : 0;
     return createdAtB - createdAtA;
   });
 
@@ -309,8 +309,8 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
 
   const sortTransactions = (txs: Transaction[], sortType: string) => {
     return [...txs].sort((a, b) => {
-      if (sortType === 'date-desc') return new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (sortType === 'date-asc') return new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (sortType === 'date-desc') return safeParseDate(b.date).getTime() - safeParseDate(a.date).getTime();
+      if (sortType === 'date-asc') return safeParseDate(a.date).getTime() - safeParseDate(b.date).getTime();
       if (sortType === 'amount-desc') return b.amount - a.amount;
       if (sortType === 'amount-asc') return a.amount - b.amount;
       return 0;
@@ -346,19 +346,19 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
 
   const applyFilters = (txs: Transaction[]) => {
     return txs.filter(tx => {
-      const txDate = new Date(tx.date).getTime();
-      const start = startDate ? new Date(startDate).getTime() : 0;
-      const end = endDate ? new Date(endDate).getTime() + 86400000 : Infinity;
+      const txDate = safeParseDate(tx.date).getTime();
+      const start = startDate ? safeParseDate(startDate).getTime() : 0;
+      const end = endDate ? safeParseDate(endDate).getTime() + 86400000 : Infinity;
       const matchDate = txDate >= start && txDate <= end;
       const matchCategory = filterCategory ? tx.category?.toLowerCase().includes(filterCategory.toLowerCase()) : true;
       return matchDate && matchCategory;
     }).sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
+      const dateA = safeParseDate(a.date).getTime();
+      const dateB = safeParseDate(b.date).getTime();
       if (dateB !== dateA) return dateB - dateA;
       
-      const createdAtA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const createdAtB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      const createdAtA = a.createdAt ? safeParseDate(a.createdAt).getTime() : 0;
+      const createdAtB = b.createdAt ? safeParseDate(b.createdAt).getTime() : 0;
       return createdAtB - createdAtA;
     });
   };
@@ -697,7 +697,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                 </div>
               </div>
             } />
-            <Route path="/riwayat" element={<Riwayat transactions={searchedTransactions} onViewDetail={openDetailModal} />} />
+            <Route path="/riwayat" element={<Riwayat transactions={searchedTransactions} onViewDetail={openDetailModal} onEdit={openEditModal} />} />
             <Route path="/analisis" element={
               <Analysis 
                 transactions={transactions}

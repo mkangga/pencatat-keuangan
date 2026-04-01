@@ -3,13 +3,24 @@ import { Transaction } from '../types';
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { ChevronRight, Search, Filter, PlusCircle, MinusCircle, Calendar, X } from 'lucide-react';
+import TransactionList from './TransactionList';
+
+const safeParseDate = (dateStr: string) => {
+  try {
+    const parsed = parseISO(dateStr);
+    return isNaN(parsed.getTime()) ? new Date() : parsed;
+  } catch {
+    return new Date();
+  }
+};
 
 interface RiwayatProps {
   transactions: Transaction[];
   onViewDetail: (tx: Transaction) => void;
+  onEdit?: (tx: Transaction) => void;
 }
 
-export default function Riwayat({ transactions, onViewDetail }: RiwayatProps) {
+export default function Riwayat({ transactions, onViewDetail, onEdit }: RiwayatProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [filterCategory, setFilterCategory] = useState('');
@@ -56,12 +67,12 @@ export default function Riwayat({ transactions, onViewDetail }: RiwayatProps) {
         return matchesSearch && matchesType && matchesCategory && matchesDate;
       })
       .sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
+        const dateA = safeParseDate(a.date).getTime();
+        const dateB = safeParseDate(b.date).getTime();
         if (dateB !== dateA) return dateB - dateA;
         
-        const createdAtA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const createdAtB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        const createdAtA = a.createdAt ? safeParseDate(a.createdAt).getTime() : 0;
+        const createdAtB = b.createdAt ? safeParseDate(b.createdAt).getTime() : 0;
         return createdAtB - createdAtA;
       });
   }, [transactions, searchQuery, filterType, dateFilter]);
@@ -74,33 +85,21 @@ export default function Riwayat({ transactions, onViewDetail }: RiwayatProps) {
     }, { income: 0, expense: 0 });
   }, [filteredTransactions]);
 
-  // Group by date
-  const groupedTransactions = filteredTransactions.reduce((groups: { [key: string]: Transaction[] }, transaction) => {
-    const date = format(parseISO(transaction.date), 'yyyy-MM-dd');
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(transaction);
-    return groups;
-  }, {});
-
-  const sortedDates = Object.keys(groupedTransactions).sort((a, b) => b.localeCompare(a));
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-32">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Header Section */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-20 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">Riwayat Transaksi</h1>
-            <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-              <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                {filteredTransactions.length} Transaksi
-              </span>
-            </div>
+      <div className="flex flex-col space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Riwayat Transaksi</h1>
+          <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+            <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+              {filteredTransactions.length} Transaksi
+            </span>
           </div>
+        </div>
 
-          {/* Search and Quick Filters */}
+        {/* Search and Quick Filters */}
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300 space-y-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1 group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-purple-500 transition-colors" size={18} />
@@ -158,115 +157,45 @@ export default function Riwayat({ transactions, onViewDetail }: RiwayatProps) {
               </select>
             </div>
           </div>
-        </div>
 
-        {/* Summary Bar */}
-        <div className="bg-purple-50/50 dark:bg-purple-900/10 px-4 py-2 border-t border-purple-100/50 dark:border-purple-900/20">
-          <div className="max-w-4xl mx-auto flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                <PlusCircle size={12} strokeWidth={3} />
-                <span>+{formatCurrency(totals.income)}</span>
+          {/* Summary Bar */}
+          <div className="bg-purple-50/50 dark:bg-purple-900/10 px-4 py-3 rounded-xl border border-purple-100/50 dark:border-purple-900/20">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                  <PlusCircle size={14} strokeWidth={2.5} />
+                  <span>+{formatCurrency(totals.income)}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-red-500 dark:text-red-400">
+                  <MinusCircle size={14} strokeWidth={2.5} />
+                  <span>-{formatCurrency(totals.expense)}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 text-red-500 dark:text-red-400">
-                <MinusCircle size={12} strokeWidth={3} />
-                <span>-{formatCurrency(totals.expense)}</span>
+              <div className={`flex items-center gap-1.5 ${totals.income - totals.expense >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'}`}>
+                <span>Selisih: {totals.income - totals.expense >= 0 ? '+' : ''}{formatCurrency(totals.income - totals.expense)}</span>
               </div>
-            </div>
-            <div className={`flex items-center gap-1.5 ${totals.income - totals.expense >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'}`}>
-              <span>Selisih: {totals.income - totals.expense >= 0 ? '+' : ''}{formatCurrency(totals.income - totals.expense)}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Transaction List */}
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-8">
-        {sortedDates.length > 0 ? (
-          sortedDates.map(dateStr => {
-            const dateObj = parseISO(dateStr);
-            const dayNum = format(dateObj, 'dd');
-            const dayName = format(dateObj, 'EEEE', { locale: id });
-            const monthYear = format(dateObj, 'MMMM yyyy', { locale: id });
-            
-            const dayTransactions = groupedTransactions[dateStr];
-            const income = dayTransactions.filter(t => t.type === 'income' && t.category !== 'Pindah Saldo').reduce((sum, t) => sum + t.amount, 0);
-            const expense = dayTransactions.filter(t => t.type === 'expense' && t.category !== 'Pindah Saldo').reduce((sum, t) => sum + t.amount, 0);
-
-            return (
-              <div key={dateStr} className="space-y-3">
-                {/* Date Header */}
-                <div className="flex items-end justify-between px-2">
-                  <div className="flex items-center gap-3">
-                    <span className="text-4xl font-black text-gray-200 dark:text-gray-700 leading-none">{dayNum}</span>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{dayName}</span>
-                      <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-medium">{monthYear}</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 text-[10px] font-bold items-center">
-                    {income > 0 && <span className="text-emerald-600 dark:text-emerald-400">+{formatCurrency(income)}</span>}
-                    {expense > 0 && <span className="text-gray-400 dark:text-gray-500">-{formatCurrency(expense)}</span>}
-                    <div className="h-3 w-px bg-gray-200 dark:bg-gray-700 mx-0.5" />
-                    <span className={income - expense >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-500 dark:text-red-400'}>
-                      {income - expense >= 0 ? '+' : ''}{formatCurrency(income - expense)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Transactions Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                  <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                    {dayTransactions.map(tx => (
-                      <div 
-                        key={tx.id} 
-                        onClick={() => onViewDetail(tx)}
-                        className="px-5 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-all cursor-pointer group active:scale-[0.99]"
-                      >
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                          <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center ${
-                            tx.type === 'income' 
-                              ? 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-500' 
-                              : 'bg-red-500/10 dark:bg-red-500/20 text-red-500'
-                          }`}>
-                            {tx.type === 'income' ? <PlusCircle size={20} strokeWidth={2.5} /> : <MinusCircle size={20} strokeWidth={2.5} />}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-bold text-gray-800 dark:text-gray-100 text-sm truncate">{tx.category || 'Tanpa Kategori'}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                                {format(parseISO(tx.date), 'HH:mm')}
-                              </span>
-                              <span className="text-gray-300 dark:text-gray-600">•</span>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                {tx.description}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 ml-4">
-                          <span className={`font-black text-sm whitespace-nowrap ${
-                            tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-100'
-                          }`}>
-                            {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
-                          </span>
-                          <ChevronRight size={18} className="text-gray-300 group-hover:text-gray-400 group-hover:translate-x-0.5 transition-all" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            );
-          })
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300">
+        {filteredTransactions.length > 0 ? (
+          <TransactionList 
+            transactions={filteredTransactions} 
+            type="all" 
+            onViewDetail={onViewDetail} 
+            onEdit={onEdit} 
+          />
         ) : (
-          <div className="flex flex-col items-center justify-center py-24 px-6 text-center space-y-4">
-            <div className="p-6 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-300 dark:text-gray-700">
-              <Calendar size={48} />
+          <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+            <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-300 dark:text-gray-700">
+              <Calendar size={32} />
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Tidak ada riwayat</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+              <h3 className="text-base font-bold text-gray-800 dark:text-gray-100">Tidak ada riwayat</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
                 {searchQuery || filterType !== 'all' || dateFilter !== 'all' 
                   ? "Tidak ada transaksi yang sesuai dengan filter pencarian Anda." 
                   : "Mulai catat transaksi Anda untuk melihat riwayat di sini."}
@@ -280,7 +209,7 @@ export default function Riwayat({ transactions, onViewDetail }: RiwayatProps) {
                   setFilterCategory('');
                   setDateFilter('all');
                 }}
-                className="text-sm font-bold text-purple-600 dark:text-purple-400 hover:underline"
+                className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline"
               >
                 Reset Filter
               </button>
