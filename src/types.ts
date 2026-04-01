@@ -48,6 +48,16 @@ export interface Category {
   createdAt: string;
 }
 
+export interface Budget {
+  id: string;
+  userId: string;
+  categoryId: string;
+  categoryName: string;
+  amount: number;
+  month: string; // Format: YYYY-MM
+  createdAt: string;
+}
+
 export interface AppUser {
   id: string;
   uid: string;

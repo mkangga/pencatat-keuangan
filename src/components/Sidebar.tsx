@@ -5,7 +5,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   Home, PlusCircle, MinusCircle, 
   ClipboardList, CreditCard, TrendingUp, Settings, LogOut, PieChart, Wallet, Tags,
-  Moon, Sun, AlertTriangle, ReceiptText, User as UserIcon
+  Moon, Sun, AlertTriangle, ReceiptText, User as UserIcon, Target
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -35,6 +35,7 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
     { name: 'Riwayat', path: '/riwayat', icon: ClipboardList },
     { name: 'Analisis', path: '/analisis', icon: PieChart },
     { name: 'Hutang/Piutang', path: '/hutang-piutang', icon: CreditCard },
+    { name: 'Alokasi Budget', path: '/alokasi-budget', icon: Target },
     { name: 'Masa Depan', path: '/masa-depan', icon: TrendingUp },
     { name: 'Dompet & Rekening', path: '/dompet-rekening', icon: Wallet },
     { name: 'Kategori Transaksi', path: '/kategori-transaksi', icon: Tags },

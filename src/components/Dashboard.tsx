@@ -14,6 +14,7 @@ import Riwayat from './Riwayat';
 import TransactionDetailModal from './TransactionDetailModal';
 import Debts from './Debts';
 import Goals from './Goals';
+import Budgets from './Budgets';
 import Settings from './Settings';
 import Analysis from './Analysis';
 import Wallets from './Wallets';
@@ -722,6 +723,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
             } />
             <Route path="/hutang-piutang" element={<Debts user={user} wallets={wallets} />} />
             <Route path="/masa-depan" element={<Goals user={user} />} />
+            <Route path="/alokasi-budget" element={<Budgets user={user} categories={categories} transactions={transactions} />} />
             <Route path="/dompet-rekening" element={<Wallets user={user} />} />
             <Route path="/kategori-transaksi" element={<Categories user={user} />} />
             <Route path="/pengaturan" element={<Settings user={user} appUser={appUser} />} />

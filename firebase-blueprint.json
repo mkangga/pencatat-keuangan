@@ -69,6 +69,20 @@
       },
       "required": ["userId", "name", "targetAmount", "currentAmount", "createdAt"]
     },
+    "Budget": {
+      "title": "Budget",
+      "description": "A monthly budget for a specific category.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "categoryName": { "type": "string" },
+        "amount": { "type": "number" },
+        "month": { "type": "string", "description": "Format: yyyy-MM" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "categoryId", "categoryName", "amount", "month", "createdAt"]
+    },
     "User": {
       "title": "User",
       "description": "User profile information.",
@@ -94,6 +108,7 @@
     "categories/{categoryId}": { "schema": { "$ref": "#/entities/Category" }, "description": "User categories." },
     "debts/{debtId}": { "schema": { "$ref": "#/entities/Debt" }, "description": "User debts/receivables." },
     "goals/{goalId}": { "schema": { "$ref": "#/entities/Goal" }, "description": "User financial goals." },
+    "budgets/{budgetId}": { "schema": { "$ref": "#/entities/Budget" }, "description": "User monthly budgets." },
     "users/{userId}": { "schema": { "$ref": "#/entities/User" }, "description": "User profile data." }
   }
 }
