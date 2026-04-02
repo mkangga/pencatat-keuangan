@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent, useRef, useMemo } from 'react';
 import { User, updateProfile } from 'firebase/auth';
-import { collection, query, where, orderBy, onSnapshot, limit, deleteDoc, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, limit, deleteDoc, doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Transaction, Wallet, Category, AppUser } from '../types';
@@ -19,6 +19,7 @@ import Settings from './Settings';
 import Analysis from './Analysis';
 import Wallets from './Wallets';
 import Categories from './Categories';
+import Assets from './Assets';
 import { BellRing, Calendar, ChevronLeft, ChevronRight, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { MobileDrawer } from './MobileDrawer';
 import BottomNav from './BottomNav';
@@ -170,7 +171,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
   const [isRangeMode, setIsRangeMode] = useState(false);
   const [startDateRange, setStartDateRange] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [endDateRange, setEndDateRange] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [isFilterExpanded, setIsFilterExpanded] = useState(true);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
 
   // Filtered categories based on filterType
@@ -357,7 +358,21 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
 
   const handleDeleteTransaction = async (id: string) => {
     try {
+      const txToDelete = transactions.find(t => t.id === id);
       await deleteDoc(doc(db, 'transactions', id));
+      
+      if (txToDelete && txToDelete.type === 'expense' && txToDelete.goalId) {
+        // We need to fetch the goal to update it, or we can just hope it's in the Goals component state.
+        // Since we don't have goals in Dashboard state, we fetch it directly.
+        const goalRef = doc(db, 'goals', txToDelete.goalId);
+        const goalSnap = await getDoc(goalRef);
+        if (goalSnap.exists()) {
+          const currentAmount = goalSnap.data().currentAmount || 0;
+          await updateDoc(goalRef, {
+            currentAmount: currentAmount - txToDelete.amount
+          });
+        }
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `transactions/${id}`);
     }
@@ -719,10 +734,14 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                 incomeMonth={incomeMonth}
                 expenseMonth={expenseMonth}
                 balance={balance}
+                user={user}
+                categories={categories}
+                isDarkMode={isDarkMode}
               />
             } />
             <Route path="/hutang-piutang" element={<Debts user={user} wallets={wallets} />} />
-            <Route path="/masa-depan" element={<Goals user={user} />} />
+            <Route path="/target" element={<Goals user={user} />} />
+            <Route path="/aset-investasi" element={<Assets user={user} wallets={wallets} />} />
             <Route path="/alokasi-budget" element={<Budgets user={user} categories={categories} transactions={transactions} />} />
             <Route path="/dompet-rekening" element={<Wallets user={user} />} />
             <Route path="/kategori-transaksi" element={<Categories user={user} />} />

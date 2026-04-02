@@ -8,6 +8,7 @@ export interface Transaction {
   date: string; // ISO string
   category?: string;
   walletId?: string;
+  goalId?: string; // For saving to a goal
   createdAt: string; // ISO string
 }
 
@@ -28,7 +29,8 @@ export interface Goal {
   name: string;
   targetAmount: number;
   currentAmount: number;
-  walletId?: string;
+  deadline?: string; // ISO string
+  status: 'active' | 'completed';
   createdAt: string;
 }
 
@@ -40,11 +42,20 @@ export interface Wallet {
   createdAt: string;
 }
 
+export interface CategoryGroup {
+  id: string;
+  userId: string;
+  name: string;
+  type: 'needs' | 'wants' | 'savings' | 'debts' | string;
+  createdAt: string;
+}
+
 export interface Category {
   id: string;
   userId: string;
   name: string;
   type: 'income' | 'expense';
+  groupId?: string;
   createdAt: string;
 }
 
@@ -55,6 +66,17 @@ export interface Budget {
   categoryName: string;
   amount: number;
   month: string; // Format: YYYY-MM
+  createdAt: string;
+}
+
+export interface Asset {
+  id: string;
+  userId: string;
+  name: string;
+  type: string;
+  currentValue: number;
+  initialValue: number;
+  notes?: string;
   createdAt: string;
 }
 

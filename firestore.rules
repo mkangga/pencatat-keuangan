@@ -63,6 +63,13 @@ service cloud.firestore {
       allow delete: if isDocOwner() || isAdmin();
     }
 
+    match /categoryGroups/{docId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isNewDocOwner() || isAdmin();
+      allow update: if (isDocOwner() && isNewDocOwner()) || isAdmin();
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
     match /categories/{docId} {
       allow read: if isDocOwner() || isAdmin();
       allow create: if isNewDocOwner() || isAdmin();
@@ -71,6 +78,13 @@ service cloud.firestore {
     }
 
     match /budgets/{docId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isNewDocOwner() || isAdmin();
+      allow update: if (isDocOwner() && isNewDocOwner()) || isAdmin();
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /assets/{docId} {
       allow read: if isDocOwner() || isAdmin();
       allow create: if isNewDocOwner() || isAdmin();
       allow update: if (isDocOwner() && isNewDocOwner()) || isAdmin();

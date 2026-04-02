@@ -1,7 +1,10 @@
-import { Transaction, Wallet, Category } from '../types';
-import { X, Calendar, Clock, Tag, Wallet as WalletIcon, FileText, PlusCircle, MinusCircle, Edit2, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Transaction, Wallet, Category, Goal } from '../types';
+import { X, Calendar, Clock, Tag, Wallet as WalletIcon, FileText, PlusCircle, MinusCircle, Edit2, Trash2, Target } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface TransactionDetailModalProps {
   isOpen: boolean;
@@ -26,6 +29,25 @@ export default function TransactionDetailModal({
 
   const isIncome = transaction.type === 'income';
   const wallet = wallets.find(w => w.id === transaction.walletId);
+  const [goalName, setGoalName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (transaction.goalId) {
+      const fetchGoal = async () => {
+        try {
+          const goalDoc = await getDoc(doc(db, 'goals', transaction.goalId!));
+          if (goalDoc.exists()) {
+            setGoalName(goalDoc.data().name);
+          }
+        } catch (error) {
+          console.error("Error fetching goal:", error);
+        }
+      };
+      fetchGoal();
+    } else {
+      setGoalName(null);
+    }
+  }, [transaction.goalId]);
   
   const safeDate = (dateStr: string) => {
     try {
@@ -134,6 +156,21 @@ export default function TransactionDetailModal({
                 </div>
               </div>
             </div>
+
+            {/* Goal */}
+            {transaction.goalId && goalName && (
+              <div className="flex items-start gap-4 pt-2 border-t border-gray-100 dark:border-gray-700">
+                <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 dark:text-emerald-400 rounded-xl">
+                  <Target size={20} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider mb-0.5">Dialokasikan ke Target</p>
+                  <p className="text-gray-800 dark:text-gray-100 font-bold text-sm">
+                    {goalName}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Notes */}
             {transaction.notes && (

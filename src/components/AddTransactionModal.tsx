@@ -1,9 +1,9 @@
 import { useState, FormEvent, useEffect, ChangeEvent, useMemo } from 'react';
 import { User } from 'firebase/auth';
-import { collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, updateDoc, doc, query, where, onSnapshot } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { X, Wallet as WalletIcon, Tag, AlertCircle } from 'lucide-react';
-import { Wallet, Category, Transaction } from '../types';
+import { X, Wallet as WalletIcon, Tag, AlertCircle, Target } from 'lucide-react';
+import { Wallet, Category, Transaction, Goal } from '../types';
 import { useNavigate } from 'react-router-dom';
 
 interface AddTransactionModalProps {
@@ -188,7 +188,7 @@ export default function AddTransactionModal({
         amount: numericAmount,
         description,
         notes,
-        date: fullDate,
+        date: fullDate.toISOString(),
         updatedAt: serverTimestamp(),
       };
       if (category) txData.category = category;

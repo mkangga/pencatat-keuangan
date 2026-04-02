@@ -13,6 +13,7 @@
         "date": { "type": "string", "format": "date-time" },
         "category": { "type": "string" },
         "walletId": { "type": "string" },
+        "goalId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "type", "amount", "description", "date", "createdAt"]
@@ -28,6 +29,18 @@
       },
       "required": ["userId", "name", "createdAt"]
     },
+    "CategoryGroup": {
+      "title": "Category Group",
+      "description": "A group for categorizing transactions (Needs, Wants, Savings, Debts).",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "type", "createdAt"]
+    },
     "Category": {
       "title": "Category",
       "description": "A category for transactions.",
@@ -36,6 +49,7 @@
         "userId": { "type": "string" },
         "name": { "type": "string" },
         "type": { "type": "string", "enum": ["income", "expense"] },
+        "groupId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "name", "type", "createdAt"]
@@ -64,10 +78,11 @@
         "name": { "type": "string" },
         "targetAmount": { "type": "number" },
         "currentAmount": { "type": "number" },
-        "walletId": { "type": "string" },
+        "deadline": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "completed"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "name", "targetAmount", "currentAmount", "createdAt"]
+      "required": ["userId", "name", "targetAmount", "currentAmount", "status", "createdAt"]
     },
     "Budget": {
       "title": "Budget",
@@ -82,6 +97,21 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "categoryId", "categoryName", "amount", "month", "createdAt"]
+    },
+    "Asset": {
+      "title": "Asset",
+      "description": "A user's investment asset (stock, crypto, gold, etc.).",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["stock", "crypto", "gold", "property", "other"] },
+        "currentValue": { "type": "number" },
+        "initialValue": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "type", "currentValue", "initialValue", "createdAt"]
     },
     "User": {
       "title": "User",
@@ -105,10 +135,12 @@
   "firestore": {
     "transactions/{transactionId}": { "schema": { "$ref": "#/entities/Transaction" }, "description": "User transactions." },
     "wallets/{walletId}": { "schema": { "$ref": "#/entities/Wallet" }, "description": "User wallets." },
+    "categoryGroups/{groupId}": { "schema": { "$ref": "#/entities/CategoryGroup" }, "description": "User category groups." },
     "categories/{categoryId}": { "schema": { "$ref": "#/entities/Category" }, "description": "User categories." },
     "debts/{debtId}": { "schema": { "$ref": "#/entities/Debt" }, "description": "User debts/receivables." },
     "goals/{goalId}": { "schema": { "$ref": "#/entities/Goal" }, "description": "User financial goals." },
     "budgets/{budgetId}": { "schema": { "$ref": "#/entities/Budget" }, "description": "User monthly budgets." },
+    "assets/{assetId}": { "schema": { "$ref": "#/entities/Asset" }, "description": "User investment assets." },
     "users/{userId}": { "schema": { "$ref": "#/entities/User" }, "description": "User profile data." }
   }
 }

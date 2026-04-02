@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { 
   Home, PlusCircle, MinusCircle, PieChart, ReceiptText, 
-  ClipboardList, CreditCard, TrendingUp, Wallet, Tags, Settings, User, Target
+  ClipboardList, CreditCard, TrendingUp, Wallet, Tags, Settings, User, Target, Briefcase
 } from 'lucide-react';
 
 export const ALL_NAV_ITEMS = [
@@ -11,8 +11,9 @@ export const ALL_NAV_ITEMS = [
   { name: 'Analisis', path: '/analisis', icon: PieChart },
   { name: 'Riwayat', path: '/riwayat', icon: ClipboardList },
   { name: 'Hutang', path: '/hutang-piutang', icon: CreditCard },
+  { name: 'Aset', path: '/aset-investasi', icon: Briefcase },
   { name: 'Budget', path: '/alokasi-budget', icon: Target },
-  { name: 'Masa Depan', path: '/masa-depan', icon: TrendingUp },
+  { name: 'Target & Tabungan', path: '/target', icon: TrendingUp },
   { name: 'Dompet', path: '/dompet-rekening', icon: Wallet },
   { name: 'Kategori', path: '/kategori-transaksi', icon: Tags },
   { name: 'Pengaturan', path: '/pengaturan', icon: Settings },

@@ -1,9 +1,12 @@
-import { useMemo, useState } from 'react';
-import { Transaction } from '../types';
+import { useMemo, useState, useEffect } from 'react';
+import { Transaction, Category, CategoryGroup } from '../types';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { subMonths, isAfter, format, isSameMonth, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import SummaryCards from './SummaryCards';
+import { User } from 'firebase/auth';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
@@ -14,6 +17,9 @@ interface AnalysisProps {
   incomeMonth: number;
   expenseMonth: number;
   balance: number;
+  user: User;
+  categories: Category[];
+  isDarkMode: boolean;
 }
 
 export default function Analysis({ 
@@ -22,8 +28,22 @@ export default function Analysis({
   expenseToday,
   incomeMonth,
   expenseMonth,
-  balance
+  balance,
+  user,
+  categories,
+  isDarkMode
 }: AnalysisProps) {
+  const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'categoryGroups'), where('userId', '==', user.uid));
+    const unsub = onSnapshot(q, (snap) => {
+      setCategoryGroups(snap.docs.map(d => ({ id: d.id, ...d.data() } as CategoryGroup)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'categoryGroups');
+    });
+    return () => unsub();
+  }, [user]);
   const months = useMemo(() => {
     const months = [];
     for (let i = 0; i < 12; i++) {
@@ -73,6 +93,95 @@ export default function Analysis({
 
     return { expensePieData, incomePieData, incomeExpenseData };
   }, [transactions, selectedMonth]);
+
+  const healthAnalysisData = useMemo(() => {
+    const groupTotals: Record<string, number> = {
+      needs: 0,
+      wants: 0,
+      savings: 0,
+      debts: 0,
+      uncategorized: 0
+    };
+
+    expensePieData.forEach(item => {
+      // Find the corresponding expense category to get its group
+      const category = categories.find(c => 
+        c.type === 'expense' && 
+        c.name.trim().toLowerCase() === item.name.trim().toLowerCase()
+      );
+      
+      const debtGroup = categoryGroups.find(g => 
+        g.type === 'debts' || 
+        g.name.toLowerCase().includes('hutang') || 
+        g.name.toLowerCase().includes('debt')
+      );
+      
+      if (category && category.groupId) {
+        const group = categoryGroups.find(g => g.id === category.groupId);
+        if (group) {
+          const groupType = group.type.toLowerCase();
+          if (groupType === 'needs' || groupType === 'kebutuhan') groupTotals.needs += item.value;
+          else if (groupType === 'wants' || groupType === 'keinginan') groupTotals.wants += item.value;
+          else if (groupType === 'savings' || groupType === 'tabungan' || groupType === 'investasi') groupTotals.savings += item.value;
+          else if (groupType === 'debts' || groupType === 'hutang' || group.name.toLowerCase().includes('hutang') || group.name.toLowerCase().includes('debt') || group.name.toLowerCase() === 'debts') groupTotals.debts += item.value;
+          else groupTotals.uncategorized += item.value;
+        } else {
+          groupTotals.uncategorized += item.value;
+        }
+      } else if (
+        item.name === 'Hutang/Piutang' || 
+        item.name.toLowerCase().includes('hutang') || 
+        item.name.toLowerCase().includes('pinjaman') || 
+        item.name.toLowerCase().includes('cicilan') || 
+        item.name.toLowerCase().includes('paylater')
+      ) {
+        // Fallback for built-in debt transactions or categories containing debt keywords
+        groupTotals.debts += item.value;
+      } else {
+        groupTotals.uncategorized += item.value;
+      }
+    });
+
+    const totalExpense = Object.values(groupTotals).reduce((a, b) => a + b, 0);
+
+    const data = [
+      { name: 'Needs (Kebutuhan)', value: groupTotals.needs, color: '#3b82f6', percentage: totalExpense ? (groupTotals.needs / totalExpense) * 100 : 0 },
+      { name: 'Wants (Keinginan)', value: groupTotals.wants, color: '#f59e0b', percentage: totalExpense ? (groupTotals.wants / totalExpense) * 100 : 0 },
+      { name: 'Savings (Tabungan)', value: groupTotals.savings, color: '#10b981', percentage: totalExpense ? (groupTotals.savings / totalExpense) * 100 : 0 },
+      { name: 'Debts (Hutang)', value: groupTotals.debts, color: '#ef4444', percentage: totalExpense ? (groupTotals.debts / totalExpense) * 100 : 0 },
+      { name: 'Lainnya', value: groupTotals.uncategorized, color: '#9ca3af', percentage: totalExpense ? (groupTotals.uncategorized / totalExpense) * 100 : 0 }
+    ].filter(d => d.value > 0);
+
+    let conclusion = '';
+    if (totalExpense > 0) {
+      const needsPct = (groupTotals.needs / totalExpense) * 100;
+      const wantsPct = (groupTotals.wants / totalExpense) * 100;
+      const savingsPct = (groupTotals.savings / totalExpense) * 100;
+      const debtsPct = (groupTotals.debts / totalExpense) * 100;
+
+      const insights = [];
+      if (needsPct > 50) insights.push('Pengeluaran Kebutuhan (Needs) Anda melebihi batas ideal 50%.');
+      if (wantsPct > 30) insights.push('Pengeluaran Keinginan (Wants) Anda melebihi batas ideal 30%.');
+      
+      // For savings and debts, we consider them together as "financial future"
+      const totalFinancialFuture = savingsPct + debtsPct;
+      if (totalFinancialFuture < 20) {
+        insights.push('Alokasi untuk Tabungan & Pelunasan Hutang Anda masih di bawah target ideal 20%.');
+      }
+      
+      if (debtsPct > 15) {
+        insights.push('Porsi pembayaran Hutang/Cicilan Anda cukup tinggi (di atas 15%), usahakan untuk menguranginya.');
+      }
+      
+      if (insights.length === 0) {
+        conclusion = 'Kesehatan finansial Anda sangat baik! Anda telah mengikuti aturan alokasi keuangan dengan disiplin.';
+      } else {
+        conclusion = insights.join(' ');
+      }
+    }
+
+    return { data, conclusion };
+  }, [expensePieData, categories, categoryGroups]);
 
   const monthlySummaryData = useMemo(() => {
     const data = [];
@@ -171,7 +280,7 @@ export default function Analysis({
                     outerRadius={90}
                     {...(chartType === 'donut' ? { innerRadius: 60, paddingAngle: 5 } : {})}
                     dataKey="value"
-                    stroke={chartType === 'pie' ? (document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff') : 'none'}
+                    stroke={chartType === 'pie' ? (isDarkMode ? '#1f2937' : '#ffffff') : 'none'}
                     strokeWidth={chartType === 'pie' ? 2 : undefined}
                   >
                     {data.map((entry, index) => (
@@ -184,10 +293,10 @@ export default function Analysis({
                       borderRadius: '12px', 
                       border: 'none', 
                       boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                      backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
-                      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937'
+                      backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                      color: isDarkMode ? '#f3f4f6' : '#1f2937'
                     }} 
-                    itemStyle={{ color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937' }}
+                    itemStyle={{ color: isDarkMode ? '#f3f4f6' : '#1f2937' }}
                   />
                   <Legend 
                     layout="horizontal" 
@@ -239,8 +348,8 @@ export default function Analysis({
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlySummaryData} margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563', fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDarkMode ? '#9ca3af' : '#4b5563', fontSize: 12 }} />
                 <YAxis 
                   width={60}
                   tickFormatter={(val) => {
@@ -252,19 +361,19 @@ export default function Analysis({
                   axisLine={false} 
                   tickLine={false} 
                   fontSize={12} 
-                  tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563' }} 
+                  tick={{ fill: isDarkMode ? '#9ca3af' : '#4b5563' }} 
                 />
                 <Tooltip 
                   formatter={(value: number) => formatCurrency(value)} 
-                  cursor={{ fill: document.documentElement.classList.contains('dark') ? '#374151' : '#f3f4f6' }} 
+                  cursor={{ fill: isDarkMode ? '#374151' : '#f3f4f6' }} 
                   contentStyle={{ 
                     borderRadius: '12px', 
                     border: 'none', 
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                    backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
-                    color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937'
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    color: isDarkMode ? '#f3f4f6' : '#1f2937'
                   }}
-                  itemStyle={{ color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937' }}
+                  itemStyle={{ color: isDarkMode ? '#f3f4f6' : '#1f2937' }}
                 />
                 <Legend 
                   wrapperStyle={{ paddingTop: '20px', fontSize: '12px' }}
@@ -278,12 +387,66 @@ export default function Analysis({
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-6">Financial Health Analysis</h2>
+          <div className="h-[300px] w-full relative">
+            {healthAnalysisData.data.length === 0 ? (
+              <div className="absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">
+                Belum ada data pengeluaran bulan ini
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={healthAnalysisData.data}
+                    cx="50%"
+                    cy="40%"
+                    outerRadius={90}
+                    innerRadius={60}
+                    paddingAngle={5}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {healthAnalysisData.data.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: number) => formatCurrency(value)} 
+                    contentStyle={{ 
+                      borderRadius: '12px', 
+                      border: 'none', 
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                      backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+                      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937'
+                    }} 
+                    itemStyle={{ color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937' }}
+                  />
+                  <Legend 
+                    layout="horizontal" 
+                    verticalAlign="bottom" 
+                    align="center" 
+                    iconType="circle"
+                    wrapperStyle={{ paddingTop: '20px', fontSize: '12px' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+          {healthAnalysisData.conclusion && (
+            <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
+              <h3 className="text-sm font-bold text-emerald-800 dark:text-emerald-300 mb-1">Kesimpulan:</h3>
+              <p className="text-sm text-emerald-700 dark:text-emerald-400">{healthAnalysisData.conclusion}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-6">Pemasukan vs Pengeluaran</h2>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={incomeExpenseData} margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563' }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDarkMode ? '#9ca3af' : '#4b5563' }} />
                 <YAxis 
                   width={60}
                   tickFormatter={(val) => {
@@ -295,7 +458,7 @@ export default function Analysis({
                   axisLine={false} 
                   tickLine={false} 
                   fontSize={12} 
-                  tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563' }} 
+                  tick={{ fill: isDarkMode ? '#9ca3af' : '#4b5563' }} 
                 />
                 <Tooltip 
                   formatter={(value: number) => formatCurrency(value)} 
@@ -304,10 +467,10 @@ export default function Analysis({
                     borderRadius: '12px', 
                     border: 'none', 
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                    backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
-                    color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937'
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    color: isDarkMode ? '#f3f4f6' : '#1f2937'
                   }}
-                  itemStyle={{ color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937' }}
+                  itemStyle={{ color: isDarkMode ? '#f3f4f6' : '#1f2937' }}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
                   {incomeExpenseData.map((entry, index) => (
