@@ -65,7 +65,7 @@ export default function Categories({ user }: { user: User }) {
         });
       });
 
-      await batch.commit();
+      batch.commit().catch(error => handleFirestoreError(error, OperationType.WRITE, 'categoryGroups'));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'categoryGroups');
     } finally {
@@ -78,17 +78,18 @@ export default function Categories({ user }: { user: User }) {
     try {
       if (categoryGroups.length === 3) {
         // Add Debts group
-        await addDoc(collection(db, 'categoryGroups'), {
+        addDoc(collection(db, 'categoryGroups'), {
           userId: user.uid,
           name: 'Debts',
           type: 'debts',
           createdAt: serverTimestamp()
-        });
+        }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'categoryGroups'));
       } else {
         // Remove Debts group
         const debtsGroup = categoryGroups.find(g => g.type === 'debts');
         if (debtsGroup) {
-          await deleteDoc(doc(db, 'categoryGroups', debtsGroup.id));
+          deleteDoc(doc(db, 'categoryGroups', debtsGroup.id))
+            .catch(error => handleFirestoreError(error, OperationType.DELETE, `categoryGroups/${debtsGroup.id}`));
         }
       }
     } catch (error) {
@@ -107,13 +108,13 @@ export default function Categories({ user }: { user: User }) {
     }
     setLoading(true);
     try {
-      await addDoc(collection(db, 'categories'), {
+      addDoc(collection(db, 'categories'), {
         userId: user.uid,
         name: name.trim(),
         type,
         groupId: type === 'expense' ? groupId : null,
         createdAt: serverTimestamp()
-      });
+      }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'categories'));
       setName('');
       setGroupId('');
     } catch (error) {
@@ -136,10 +137,10 @@ export default function Categories({ user }: { user: User }) {
       const newName = editName.trim();
 
       // 1. Update Category
-      await updateDoc(doc(db, 'categories', editingCategory.id), {
+      updateDoc(doc(db, 'categories', editingCategory.id), {
         name: newName,
         groupId: editType === 'expense' ? editGroupId : null
-      });
+      }).catch(error => handleFirestoreError(error, OperationType.UPDATE, 'categories'));
 
       // 2. Update Transactions that use this category (only if name changed)
       if (oldName !== newName) {
@@ -149,12 +150,14 @@ export default function Categories({ user }: { user: User }) {
           where('category', '==', oldName),
           where('type', '==', editingCategory.type)
         );
-        const querySnapshot = await getDocs(q);
-        const batch = writeBatch(db);
-        querySnapshot.forEach((transactionDoc) => {
-          batch.update(transactionDoc.ref, { category: newName });
-        });
-        await batch.commit();
+        
+        getDocs(q).then((querySnapshot) => {
+          const batch = writeBatch(db);
+          querySnapshot.forEach((transactionDoc) => {
+            batch.update(transactionDoc.ref, { category: newName });
+          });
+          batch.commit().catch(error => handleFirestoreError(error, OperationType.UPDATE, 'transactions'));
+        }).catch(error => handleFirestoreError(error, OperationType.GET, 'transactions'));
       }
       setEditingCategory(null);
     } catch (error) {

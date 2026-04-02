@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Wallet as WalletIcon, Trash2, Edit2, X } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
@@ -100,7 +100,8 @@ export default function Goals({ user }: { user: User }) {
       };
       if (deadline) goalData.deadline = deadline;
 
-      const docRef = await addDoc(collection(db, 'goals'), goalData);
+      const goalRef = doc(collection(db, 'goals'));
+      setDoc(goalRef, goalData).catch(error => handleFirestoreError(error, OperationType.WRITE, 'goals'));
 
       if (numericInitialAmount > 0 && initialWalletId) {
         addDoc(collection(db, 'transactions'), {
@@ -110,7 +111,7 @@ export default function Goals({ user }: { user: User }) {
           description: `Saldo awal target: ${name}`,
           category: 'Tabungan',
           walletId: initialWalletId,
-          goalId: docRef.id,
+          goalId: goalRef.id,
           date: new Date().toISOString(),
           createdAt: serverTimestamp()
         }).catch(error => {
@@ -159,10 +160,11 @@ export default function Goals({ user }: { user: User }) {
       if (editDeadline) updateData.deadline = editDeadline;
       else updateData.deadline = null;
 
-      await updateDoc(doc(db, 'goals', editingGoal.id), updateData);
+      updateDoc(doc(db, 'goals', editingGoal.id), updateData)
+        .catch(error => handleFirestoreError(error, OperationType.WRITE, 'goals'));
 
       if (diff !== 0) {
-        await addDoc(collection(db, 'transactions'), {
+        addDoc(collection(db, 'transactions'), {
           userId: user.uid,
           type: diff > 0 ? 'income' : 'expense',
           amount: Math.abs(diff),
@@ -172,7 +174,7 @@ export default function Goals({ user }: { user: User }) {
           goalId: editingGoal.id,
           date: new Date().toISOString(),
           createdAt: serverTimestamp()
-        });
+        }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'transactions'));
       }
 
       setIsEditModalOpen(false);

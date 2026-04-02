@@ -96,12 +96,12 @@ export default function Wallets({ user }: { user: User }) {
     setLoading(true);
     try {
       const walletRef = doc(collection(db, 'wallets'));
-      await setDoc(walletRef, {
+      setDoc(walletRef, {
         userId: user.uid,
         name: name.trim(),
         initialBalance: numericBalance,
         createdAt: serverTimestamp()
-      });
+      }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'wallets'));
 
       setName('');
       setInitialBalance('0');
@@ -139,7 +139,7 @@ export default function Wallets({ user }: { user: User }) {
 
     setLoading(true);
     try {
-      await addDoc(collection(db, 'transactions'), {
+      addDoc(collection(db, 'transactions'), {
         userId: user.uid,
         type: diff > 0 ? 'income' : 'expense',
         amount: Math.abs(diff),
@@ -148,7 +148,7 @@ export default function Wallets({ user }: { user: User }) {
         walletId: correctingWallet.id,
         date: new Date().toISOString(),
         createdAt: serverTimestamp()
-      });
+      }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'transactions'));
 
       setCorrectingWallet(null);
       setNewBalance('');

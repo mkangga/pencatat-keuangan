@@ -77,31 +77,29 @@ export default function TransferModal({
       const fromWallet = wallets.find(w => w.id === fromWalletId);
       const toWallet = wallets.find(w => w.id === toWalletId);
 
-      // 1. Create expense from source wallet
-      await addDoc(collection(db, 'transactions'), {
+      const commonData = {
         userId: user.uid,
-        type: 'expense',
         amount: numericAmount,
         description: `${description}: ${fromWallet?.name} ke ${toWallet?.name}`,
         category: 'Pindah Saldo',
-        walletId: fromWalletId,
         date: fullDate,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      // 1. Create expense from source wallet
+      addDoc(collection(db, 'transactions'), {
+        ...commonData,
+        type: 'expense',
+        walletId: fromWalletId,
+      }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'transactions'));
 
       // 2. Create income to destination wallet
-      await addDoc(collection(db, 'transactions'), {
-        userId: user.uid,
+      addDoc(collection(db, 'transactions'), {
+        ...commonData,
         type: 'income',
-        amount: numericAmount,
-        description: `${description}: ${fromWallet?.name} ke ${toWallet?.name}`,
-        category: 'Pindah Saldo',
         walletId: toWalletId,
-        date: fullDate,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+      }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'transactions'));
 
       onClose();
     } catch (error) {

@@ -126,7 +126,7 @@ export default function Debts({ user, wallets }: DebtsProps) {
         });
       }
 
-      await batch.commit();
+      batch.commit().catch(error => handleFirestoreError(error, OperationType.WRITE, 'debts'));
 
       setAmount('');
       setDescription('');
@@ -174,7 +174,7 @@ export default function Debts({ user, wallets }: DebtsProps) {
         });
       }
 
-      await batch.commit();
+      batch.commit().catch(error => handleFirestoreError(error, OperationType.UPDATE, `debts/${payDebt.id}`));
       setPayDebt(null);
       setPayRecordTransaction(false);
     } catch (error) {
@@ -186,7 +186,8 @@ export default function Debts({ user, wallets }: DebtsProps) {
 
   const handleRevertStatus = async (debt: Debt) => {
     try {
-      await updateDoc(doc(db, 'debts', debt.id), { status: 'unpaid' });
+      updateDoc(doc(db, 'debts', debt.id), { status: 'unpaid' })
+        .catch(error => handleFirestoreError(error, OperationType.UPDATE, `debts/${debt.id}`));
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `debts/${debt.id}`);
     }

@@ -102,28 +102,29 @@ export default function Budgets({ user, categories, transactions }: BudgetsProps
       const selectedCategory = categories.find(c => c.id === categoryId);
       const categoryName = selectedCategory ? selectedCategory.name : 'Unknown';
 
+      const budgetData = {
+        categoryId,
+        categoryName,
+        amount: numericAmount,
+      };
+
       if (editingBudget) {
-        await updateDoc(doc(db, 'budgets', editingBudget.id), {
-          categoryId,
-          categoryName,
-          amount: numericAmount,
-        });
+        updateDoc(doc(db, 'budgets', editingBudget.id), budgetData)
+          .catch(error => handleFirestoreError(error, OperationType.WRITE, 'budgets'));
       } else {
         // Check if budget already exists for this category and month
         const existingBudget = budgets.find(b => b.categoryId === categoryId);
         if (existingBudget) {
-          await updateDoc(doc(db, 'budgets', existingBudget.id), {
+          updateDoc(doc(db, 'budgets', existingBudget.id), {
             amount: numericAmount,
-          });
+          }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'budgets'));
         } else {
-          await addDoc(collection(db, 'budgets'), {
+          addDoc(collection(db, 'budgets'), {
             userId: user.uid,
-            categoryId,
-            categoryName,
-            amount: numericAmount,
+            ...budgetData,
             month: currentMonthStr,
             createdAt: serverTimestamp()
-          });
+          }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'budgets'));
         }
       }
       setIsModalOpen(false);

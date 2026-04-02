@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent, ChangeEvent, useMemo } from 'react';
 import { User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { 
   TrendingUp, 
@@ -126,10 +126,11 @@ export default function Assets({ user, wallets }: { user: User, wallets: WalletT
         createdAt: new Date().toISOString()
       };
 
-      const docRef = await addDoc(collection(db, 'assets'), assetData);
+      const assetRef = doc(collection(db, 'assets'));
+      setDoc(assetRef, assetData).catch(error => handleFirestoreError(error, OperationType.WRITE, 'assets'));
 
       if (recordTransaction && walletId) {
-        await addDoc(collection(db, 'transactions'), {
+        addDoc(collection(db, 'transactions'), {
           userId: user.uid,
           type: 'expense',
           amount: numericInitial,
@@ -138,7 +139,7 @@ export default function Assets({ user, wallets }: { user: User, wallets: WalletT
           walletId,
           date: new Date().toISOString(),
           createdAt: serverTimestamp()
-        });
+        }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'transactions'));
       }
 
       setIsAddModalOpen(false);
@@ -170,7 +171,8 @@ export default function Assets({ user, wallets }: { user: User, wallets: WalletT
         notes
       };
 
-      await updateDoc(doc(db, 'assets', editingAsset.id), updateData);
+      updateDoc(doc(db, 'assets', editingAsset.id), updateData)
+        .catch(error => handleFirestoreError(error, OperationType.WRITE, 'assets'));
 
       setIsEditModalOpen(false);
       setEditingAsset(null);
@@ -200,7 +202,7 @@ export default function Assets({ user, wallets }: { user: User, wallets: WalletT
     setLoading(true);
     try {
       // 1. Add income transaction
-      await addDoc(collection(db, 'transactions'), {
+      addDoc(collection(db, 'transactions'), {
         userId: user.uid,
         type: 'income',
         amount,
@@ -209,17 +211,18 @@ export default function Assets({ user, wallets }: { user: User, wallets: WalletT
         walletId,
         date: new Date().toISOString(),
         createdAt: serverTimestamp()
-      });
+      }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'transactions'));
 
       // 2. Update or delete asset
       if (amount === liquidatingAsset.currentValue) {
         // Full liquidation
-        await deleteDoc(doc(db, 'assets', liquidatingAsset.id));
+        deleteDoc(doc(db, 'assets', liquidatingAsset.id))
+          .catch(error => handleFirestoreError(error, OperationType.DELETE, `assets/${liquidatingAsset.id}`));
       } else {
         // Partial liquidation
-        await updateDoc(doc(db, 'assets', liquidatingAsset.id), {
+        updateDoc(doc(db, 'assets', liquidatingAsset.id), {
           currentValue: liquidatingAsset.currentValue - amount
-        });
+        }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'assets'));
       }
 
       setIsLiquidateModalOpen(false);
@@ -251,7 +254,7 @@ export default function Assets({ user, wallets }: { user: User, wallets: WalletT
     try {
       // 1. Record transaction if requested
       if (recordTransaction && walletId) {
-        await addDoc(collection(db, 'transactions'), {
+        addDoc(collection(db, 'transactions'), {
           userId: user.uid,
           type: 'expense',
           amount,
@@ -260,14 +263,14 @@ export default function Assets({ user, wallets }: { user: User, wallets: WalletT
           walletId,
           date: new Date().toISOString(),
           createdAt: serverTimestamp()
-        });
+        }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'transactions'));
       }
 
       // 2. Update asset values
-      await updateDoc(doc(db, 'assets', topUpAsset.id), {
+      updateDoc(doc(db, 'assets', topUpAsset.id), {
         initialValue: topUpAsset.initialValue + amount,
         currentValue: topUpAsset.currentValue + amount
-      });
+      }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'assets'));
 
       setIsTopUpModalOpen(false);
       setTopUpAsset(null);
@@ -291,9 +294,9 @@ export default function Assets({ user, wallets }: { user: User, wallets: WalletT
 
     setLoading(true);
     try {
-      await updateDoc(doc(db, 'assets', updatingValueAsset.id), {
+      updateDoc(doc(db, 'assets', updatingValueAsset.id), {
         currentValue: numericCurrent
-      });
+      }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'assets'));
 
       setIsUpdateValueModalOpen(false);
       setUpdatingValueAsset(null);
