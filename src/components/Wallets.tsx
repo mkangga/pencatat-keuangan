@@ -12,6 +12,8 @@ import { id } from 'date-fns/locale';
 export default function Wallets({ user }: { user: User }) {
   const [wallets, setWallets] = useState<WalletType[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [walletsLoaded, setWalletsLoaded] = useState(false);
+  const [transactionsLoaded, setTransactionsLoaded] = useState(false);
   const [name, setName] = useState('');
   const [initialBalance, setInitialBalance] = useState('0');
   const [loading, setLoading] = useState(false);
@@ -24,8 +26,10 @@ export default function Wallets({ user }: { user: User }) {
     const q = query(collection(db, 'wallets'), where('userId', '==', user.uid));
     const unsub = onSnapshot(q, (snap) => {
       setWallets(snap.docs.map(d => ({ id: d.id, ...d.data() } as WalletType)));
+      setWalletsLoaded(true);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'wallets');
+      setWalletsLoaded(true);
     });
     return () => unsub();
   }, [user]);
@@ -34,8 +38,10 @@ export default function Wallets({ user }: { user: User }) {
     const q = query(collection(db, 'transactions'), where('userId', '==', user.uid));
     const unsub = onSnapshot(q, (snap) => {
       setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Transaction)));
+      setTransactionsLoaded(true);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'transactions');
+      setTransactionsLoaded(true);
     });
     return () => unsub();
   }, [user]);
@@ -159,15 +165,21 @@ export default function Wallets({ user }: { user: User }) {
     }
   };
 
+  const isDataReady = walletsLoaded && transactionsLoaded;
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Dompet & Rekening</h1>
         <div className="flex flex-col">
           <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Total Saldo</span>
-          <span className={`text-3xl font-black tracking-tight ${totalSaldo >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-            {formatCurrency(totalSaldo)}
-          </span>
+          {!isDataReady ? (
+            <div className="h-9 w-48 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg mt-1"></div>
+          ) : (
+            <span className={`text-3xl font-black tracking-tight ${totalSaldo >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+              {formatCurrency(totalSaldo)}
+            </span>
+          )}
         </div>
       </div>
       
@@ -189,7 +201,15 @@ export default function Wallets({ user }: { user: User }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {wallets.map(wallet => (
+        {!isDataReady ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 h-40 animate-pulse">
+              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full mb-4"></div>
+              <div className="h-5 w-24 bg-gray-100 dark:bg-gray-700 rounded mb-2"></div>
+              <div className="h-4 w-32 bg-gray-100 dark:bg-gray-700 rounded"></div>
+            </div>
+          ))
+        ) : wallets.map(wallet => (
           <div 
             key={wallet.id} 
             onClick={() => setSelectedWallet(wallet)}
@@ -230,7 +250,7 @@ export default function Wallets({ user }: { user: User }) {
             </div>
           </div>
         ))}
-        {wallets.length === 0 && (
+        {isDataReady && wallets.length === 0 && (
           <div className="col-span-full text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 border-dashed transition-colors duration-300">
             <Wallet size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <p className="text-gray-500 dark:text-gray-400">Belum ada dompet atau rekening yang ditambahkan.</p>

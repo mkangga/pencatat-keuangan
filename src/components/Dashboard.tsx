@@ -39,6 +39,8 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
+  const [walletsLoaded, setWalletsLoaded] = useState(false);
+  const [transactionsLoaded, setTransactionsLoaded] = useState(false);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -121,6 +123,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
         } as Transaction;
       });
       setTransactions(txs);
+      setTransactionsLoaded(true);
       
       if (txs.length > 0) {
         const lastTxDateObj = safeParseDate(txs[0].createdAt || txs[0].date);
@@ -141,8 +144,10 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
     const qWallets = query(collection(db, 'wallets'), where('userId', '==', user.uid));
     const unsubWallets = onSnapshot(qWallets, (snap) => {
       setWallets(snap.docs.map(d => ({ id: d.id, ...d.data() } as Wallet)));
+      setWalletsLoaded(true);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'wallets');
+      setWalletsLoaded(true);
     });
 
     // Fetch Categories
@@ -689,21 +694,33 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
                     <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 min-w-0">
                       <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Pemasukan</p>
-                      <p className="text-sm sm:text-lg font-extrabold break-words text-right sm:text-center">
-                        + {totalIncomeDaily.toLocaleString('id-ID')}
-                      </p>
+                      {!transactionsLoaded ? (
+                        <div className="h-6 w-24 bg-white/20 animate-pulse rounded-lg mt-1"></div>
+                      ) : (
+                        <p className="text-sm sm:text-lg font-extrabold break-words text-right sm:text-center">
+                          + {totalIncomeDaily.toLocaleString('id-ID')}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 border-t border-white/10 sm:border-t-0 sm:border-x sm:border-white/10 min-w-0">
                       <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Pengeluaran</p>
-                      <p className="text-sm sm:text-lg font-extrabold break-words text-right sm:text-center">
-                        - {totalExpenseDaily.toLocaleString('id-ID')}
-                      </p>
+                      {!transactionsLoaded ? (
+                        <div className="h-6 w-24 bg-white/20 animate-pulse rounded-lg mt-1"></div>
+                      ) : (
+                        <p className="text-sm sm:text-lg font-extrabold break-words text-right sm:text-center">
+                          - {totalExpenseDaily.toLocaleString('id-ID')}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 border-t border-white/10 sm:border-t-0 min-w-0">
                       <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Selisih</p>
-                      <p className={`text-sm sm:text-lg font-extrabold break-words text-right sm:text-center ${balanceDaily >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
-                        {balanceDaily >= 0 ? '+' : ''}{balanceDaily.toLocaleString('id-ID')}
-                      </p>
+                      {!transactionsLoaded ? (
+                        <div className="h-6 w-24 bg-white/20 animate-pulse rounded-lg mt-1"></div>
+                      ) : (
+                        <p className={`text-sm sm:text-lg font-extrabold break-words text-right sm:text-center ${balanceDaily >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                          {balanceDaily >= 0 ? '+' : ''}{balanceDaily.toLocaleString('id-ID')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -737,6 +754,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                 user={user}
                 categories={categories}
                 isDarkMode={isDarkMode}
+                isLoading={!walletsLoaded || !transactionsLoaded}
               />
             } />
             <Route path="/hutang-piutang" element={<Debts user={user} wallets={wallets} />} />

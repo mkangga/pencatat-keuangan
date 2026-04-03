@@ -20,6 +20,7 @@ interface AnalysisProps {
   user: User;
   categories: Category[];
   isDarkMode: boolean;
+  isLoading?: boolean;
 }
 
 export default function Analysis({ 
@@ -31,7 +32,8 @@ export default function Analysis({
   balance,
   user,
   categories,
-  isDarkMode
+  isDarkMode,
+  isLoading = false
 }: AnalysisProps) {
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
 
@@ -324,6 +326,7 @@ export default function Analysis({
           incomeMonth={incomeMonth} 
           expenseMonth={expenseMonth} 
           balance={balance} 
+          isLoading={isLoading}
         />
       </div>
 
