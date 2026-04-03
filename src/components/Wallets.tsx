@@ -16,6 +16,7 @@ export default function Wallets({ user }: { user: User }) {
   const [transactionsLoaded, setTransactionsLoaded] = useState(false);
   const [name, setName] = useState('');
   const [initialBalance, setInitialBalance] = useState('0');
+  const [recordAsTransaction, setRecordAsTransaction] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [correctingWallet, setCorrectingWallet] = useState<WalletType | null>(null);
@@ -102,15 +103,31 @@ export default function Wallets({ user }: { user: User }) {
     setLoading(true);
     try {
       const walletRef = doc(collection(db, 'wallets'));
-      setDoc(walletRef, {
+      const actualInitialBalance = recordAsTransaction ? 0 : numericBalance;
+
+      await setDoc(walletRef, {
         userId: user.uid,
         name: name.trim(),
-        initialBalance: numericBalance,
+        initialBalance: actualInitialBalance,
         createdAt: serverTimestamp()
-      }).catch(error => handleFirestoreError(error, OperationType.WRITE, 'wallets'));
+      });
+
+      if (recordAsTransaction && numericBalance > 0) {
+        await addDoc(collection(db, 'transactions'), {
+          userId: user.uid,
+          type: 'income',
+          amount: numericBalance,
+          description: `Saldo Awal: ${name.trim()}`,
+          category: 'Saldo Awal',
+          walletId: walletRef.id,
+          date: new Date().toISOString(),
+          createdAt: serverTimestamp()
+        });
+      }
 
       setName('');
       setInitialBalance('0');
+      setRecordAsTransaction(false);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'wallets');
     } finally {
@@ -185,18 +202,36 @@ export default function Wallets({ user }: { user: User }) {
       
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-8 transition-colors duration-300">
         <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Tambah Dompet/Rekening Baru</h2>
-        <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div className="md:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Nama (Contoh: BCA, Tunai)</label>
-            <input type="text" maxLength={50} value={name} onChange={e => setName(e.target.value)} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" required placeholder="Masukkan nama dompet..." />
+        <form onSubmit={handleAdd} className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Nama (Contoh: BCA, Tunai)</label>
+              <input type="text" maxLength={50} value={name} onChange={e => setName(e.target.value)} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" required placeholder="Masukkan nama dompet..." />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Saldo Awal (Rp)</label>
+              <input type="text" inputMode="numeric" value={initialBalance} onChange={e => setInitialBalance(formatNominal(e.target.value))} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="0" />
+            </div>
           </div>
-          <div className="md:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Saldo Awal (Rp)</label>
-            <input type="text" inputMode="numeric" value={initialBalance} onChange={e => setInitialBalance(formatNominal(e.target.value))} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="0" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <div className="relative flex items-center">
+                <input 
+                  type="checkbox" 
+                  checked={recordAsTransaction} 
+                  onChange={e => setRecordAsTransaction(e.target.checked)} 
+                  className="peer appearance-none w-5 h-5 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 checked:bg-emerald-500 checked:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
+                />
+                <svg className="absolute w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-white left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">Catat saldo awal sebagai transaksi pemasukan</span>
+            </label>
+            <button type="submit" disabled={loading} className="w-full sm:w-auto bg-emerald-500 text-white px-6 py-2.5 rounded-xl hover:bg-emerald-600 font-medium transition-colors disabled:opacity-70">
+              {loading ? 'Menyimpan...' : 'Tambah Dompet'}
+            </button>
           </div>
-          <button type="submit" disabled={loading} className="bg-emerald-500 text-white px-6 py-2 rounded-xl h-[42px] hover:bg-emerald-600 font-medium transition-colors disabled:opacity-70">
-            {loading ? 'Menyimpan...' : 'Tambah Dompet'}
-          </button>
         </form>
       </div>
 

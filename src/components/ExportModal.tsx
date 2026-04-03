@@ -339,24 +339,24 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="px-6 py-4 border-b flex justify-between items-center bg-emerald-50 border-emerald-100">
-          <h3 className="font-semibold text-lg text-emerald-800 flex items-center gap-2">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="px-6 py-4 border-b dark:border-gray-700 flex justify-between items-center bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/50">
+          <h3 className="font-semibold text-lg text-emerald-800 dark:text-emerald-400 flex items-center gap-2">
             <Download size={20} /> Ekspor Data
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
             <X size={20} />
           </button>
         </div>
 
         <div className="p-6 space-y-6">
           <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">Pilih Filter Data</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Pilih Filter Data</label>
             <div className="grid grid-cols-1 gap-2">
               <button
                 onClick={() => setFilter('this_month')}
                 className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
-                  filter === 'this_month' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 hover:bg-gray-50 text-gray-600'
+                  filter === 'this_month' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -368,7 +368,7 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
               <button
                 onClick={() => setFilter('date_range')}
                 className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
-                  filter === 'date_range' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 hover:bg-gray-50 text-gray-600'
+                  filter === 'date_range' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -380,7 +380,7 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
               <button
                 onClick={() => setFilter('all')}
                 className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
-                  filter === 'all' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 hover:bg-gray-50 text-gray-600'
+                  filter === 'all' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -395,45 +395,45 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
           {filter === 'date_range' && (
             <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Dari Tanggal</label>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Dari Tanggal</label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Sampai Tanggal</label>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sampai Tanggal</label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
             </div>
           )}
 
           <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">Pilih Format File</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Pilih Format File</label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setFormatType('excel')}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
-                  formatType === 'excel' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 hover:bg-gray-50 text-gray-600'
+                  formatType === 'excel' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
                 }`}
               >
-                <FileSpreadsheet size={24} className={formatType === 'excel' ? 'text-emerald-600' : 'text-gray-400'} />
+                <FileSpreadsheet size={24} className={formatType === 'excel' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'} />
                 <span className="text-xs font-bold">EXCEL</span>
               </button>
               <button
                 onClick={() => setFormatType('pdf')}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
-                  formatType === 'pdf' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 hover:bg-gray-50 text-gray-600'
+                  formatType === 'pdf' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
                 }`}
               >
-                <FileText size={24} className={formatType === 'pdf' ? 'text-emerald-600' : 'text-gray-400'} />
+                <FileText size={24} className={formatType === 'pdf' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'} />
                 <span className="text-xs font-bold">PDF</span>
               </button>
             </div>
@@ -442,7 +442,7 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
           <div className="pt-2 flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium transition-colors"
+              className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
             >
               Batal
             </button>

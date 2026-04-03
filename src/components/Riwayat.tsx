@@ -56,7 +56,8 @@ export default function Riwayat({ transactions, onViewDetail, onEdit }: RiwayatP
           (t.category && t.category.toLowerCase().includes(searchQuery.toLowerCase()));
         
         const matchesType = filterType === 'all' || t.type === filterType;
-        const matchesCategory = !filterCategory || t.category === filterCategory;
+        const txCategory = t.category || 'Tanpa Kategori';
+        const matchesCategory = !filterCategory || txCategory === filterCategory;
         
         let matchesDate = true;
         if (dateFilter !== 'all') {
@@ -75,7 +76,7 @@ export default function Riwayat({ transactions, onViewDetail, onEdit }: RiwayatP
         const createdAtB = b.createdAt ? safeParseDate(b.createdAt).getTime() : 0;
         return createdAtB - createdAtA;
       });
-  }, [transactions, searchQuery, filterType, dateFilter]);
+  }, [transactions, searchQuery, filterType, dateFilter, filterCategory]);
 
   const totals = useMemo(() => {
     return filteredTransactions.reduce((acc, t) => {

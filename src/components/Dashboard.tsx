@@ -244,7 +244,8 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
     if (filterType !== 'all' && t.type !== filterType) return false;
 
     // Category filter
-    if (filterCategory && t.category !== filterCategory) return false;
+    const txCategory = t.category || 'Tanpa Kategori';
+    if (filterCategory && txCategory !== filterCategory) return false;
 
     return true;
   });
@@ -268,7 +269,8 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
     if (filterType !== 'all' && t.type !== filterType) return false;
 
     // Category filter
-    if (filterCategory && t.category !== filterCategory) return false;
+    const txCategory = t.category || 'Tanpa Kategori';
+    if (filterCategory && txCategory !== filterCategory) return false;
 
     return true;
   });
@@ -389,7 +391,8 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
       const start = startDate ? safeParseDate(startDate).getTime() : 0;
       const end = endDate ? safeParseDate(endDate).getTime() + 86400000 : Infinity;
       const matchDate = txDate >= start && txDate <= end;
-      const matchCategory = filterCategory ? tx.category?.toLowerCase().includes(filterCategory.toLowerCase()) : true;
+      const txCategory = tx.category || 'Tanpa Kategori';
+      const matchCategory = filterCategory ? txCategory.toLowerCase().includes(filterCategory.toLowerCase()) : true;
       return matchDate && matchCategory;
     }).sort((a, b) => {
       const dateA = safeParseDate(a.date).getTime();
