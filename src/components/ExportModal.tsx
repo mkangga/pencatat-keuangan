@@ -75,61 +75,69 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
         return dateB - dateA;
       });
 
-      // Filter data
-      if (filter === 'this_month') {
-        const start = startOfMonth(new Date());
-        const end = endOfMonth(new Date());
-        transactions = transactions.filter(tx => {
-          const txDate = safeParseDate(tx.date);
-          return isWithinInterval(txDate, { start, end });
-        });
-      } else if (filter === 'date_range') {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        transactions = transactions.filter(tx => {
-          const txDate = safeParseDate(tx.date);
-          return isWithinInterval(txDate, { start, end });
-        });
-      }
-
       const walletMap = new Map(wallets.map(w => [w.id, w.name]));
 
-      // Calculate current balances for all wallets using ALL transactions
+      // Determine period boundaries
+      let periodStart = new Date(0); // Beginning of time
+      let periodEnd = new Date(); // Default to now
+      
+      if (filter === 'this_month') {
+        periodStart = startOfMonth(new Date());
+        periodEnd = endOfMonth(new Date());
+      } else if (filter === 'date_range') {
+        periodStart = new Date(startDate);
+        periodStart.setHours(0, 0, 0, 0);
+        periodEnd = new Date(endDate);
+        periodEnd.setHours(23, 59, 59, 999);
+      } else if (filter === 'all') {
+        // Find the earliest transaction date for periodStart
+        if (transactions.length > 0) {
+          const dates = transactions.map(tx => safeParseDate(tx.date).getTime());
+          periodStart = new Date(Math.min(...dates));
+        }
+      }
+
+      // Calculate balances for the period
       const walletBalances = wallets.map(w => {
+        let balanceAtStart = w.initialBalance || 0;
+        let balanceAtEnd = w.initialBalance || 0;
         let currentBalance = w.initialBalance || 0;
+        
         transactions.forEach(tx => {
+          const txDate = safeParseDate(tx.date);
           if (tx.walletId === w.id) {
+            // Balance BEFORE the period starts
+            if (txDate < periodStart) {
+              if (tx.type === 'income') balanceAtStart += tx.amount;
+              else balanceAtStart -= tx.amount;
+            }
+            // Balance AT THE END of the period
+            if (txDate <= periodEnd) {
+              if (tx.type === 'income') balanceAtEnd += tx.amount;
+              else balanceAtEnd -= tx.amount;
+            }
+            // CURRENT Balance (all time)
             if (tx.type === 'income') currentBalance += tx.amount;
             else currentBalance -= tx.amount;
           }
         });
-        return { nama: w.name, saldo: currentBalance };
+        return { 
+          nama: w.name, 
+          saldoAwal: balanceAtStart, 
+          saldoAkhir: balanceAtEnd,
+          saldoSaatIni: currentBalance,
+          selisih: balanceAtEnd - balanceAtStart
+        };
       });
 
       let totalIncome = 0;
       let totalExpense = 0;
 
-      // Filter data for the report
-      let filteredTransactions = [...transactions];
-      if (filter === 'this_month') {
-        const start = startOfMonth(new Date());
-        const end = endOfMonth(new Date());
-        filteredTransactions = filteredTransactions.filter(tx => {
-          const txDate = safeParseDate(tx.date);
-          return isWithinInterval(txDate, { start, end });
-        });
-      } else if (filter === 'date_range') {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        filteredTransactions = filteredTransactions.filter(tx => {
-          const txDate = safeParseDate(tx.date);
-          return isWithinInterval(txDate, { start, end });
-        });
-      }
+      // Filter data for the report (transactions WITHIN the period)
+      const filteredTransactions = transactions.filter(tx => {
+        const txDate = safeParseDate(tx.date);
+        return txDate >= periodStart && txDate <= periodEnd;
+      });
 
       const exportData = filteredTransactions.map(tx => {
         let formattedDate = '-';
@@ -153,15 +161,18 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
           Kategori: tx.category || '-',
           Dompet: tx.walletId ? walletMap.get(tx.walletId) || '-' : '-',
           Keterangan: tx.description || '-',
-          Pemasukan: tx.type === 'income' ? tx.amount : null, // Use null to avoid 0 in Excel
-          Pengeluaran: tx.type === 'expense' ? tx.amount : null // Use null to avoid 0 in Excel
+          Pemasukan: tx.type === 'income' ? tx.amount : null,
+          Pengeluaran: tx.type === 'expense' ? tx.amount : null
         };
       });
 
       const summary = {
         totalIncome,
         totalExpense,
-        netBalance: totalIncome - totalExpense
+        netBalance: totalIncome - totalExpense,
+        totalSaldoAwal: walletBalances.reduce((sum, w) => sum + w.saldoAwal, 0),
+        totalSaldoAkhir: walletBalances.reduce((sum, w) => sum + w.saldoAkhir, 0),
+        totalSaldoSaatIni: walletBalances.reduce((sum, w) => sum + w.saldoSaatIni, 0)
       };
 
       if (formatType === 'excel') {
@@ -184,7 +195,10 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
     // 1. Wallet Balances Sheet
     const walletData = walletBalances.map(w => ({
       'Nama Dompet/Rekening': w.nama,
-      'Saldo Saat Ini': w.saldo
+      'Saldo Awal Periode': w.saldoAwal,
+      'Selisih Periode': w.selisih,
+      'Saldo Akhir Periode': w.saldoAkhir,
+      'Saldo Saat Ini (Real-time)': w.saldoSaatIni
     }));
     const wsWallets = XLSX.utils.json_to_sheet(walletData);
     XLSX.utils.book_append_sheet(wb, wsWallets, "Saldo Dompet");
@@ -195,9 +209,12 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
     // Add summary rows at the bottom
     XLSX.utils.sheet_add_aoa(wsTxs, [
       [],
+      ['', '', '', '', 'Total Saldo Awal', summary.totalSaldoAwal, ''],
       ['', '', '', '', 'Total Pemasukan', summary.totalIncome, ''],
       ['', '', '', '', 'Total Pengeluaran', '', summary.totalExpense],
-      ['', '', '', '', 'Saldo Bersih', summary.netBalance, ''],
+      ['', '', '', '', 'Selisih Periode', summary.netBalance, ''],
+      ['', '', '', '', 'Total Saldo Akhir', summary.totalSaldoAkhir, ''],
+      ['', '', '', '', 'Total Saldo Saat Ini', summary.totalSaldoSaatIni, ''],
     ], { origin: -1 });
 
     // Set column widths
@@ -205,7 +222,7 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
       { wch: 18 }, { wch: 12 }, { wch: 20 }, { wch: 20 }, { wch: 35 }, { wch: 15 }, { wch: 15 }
     ];
     wsWallets['!cols'] = [
-      { wch: 30 }, { wch: 20 }
+      { wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 25 }
     ];
 
     XLSX.utils.book_append_sheet(wb, wsTxs, "Transaksi");
@@ -233,38 +250,62 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
     // Summary Box
     doc.setFillColor(240, 253, 244);
     doc.setDrawColor(16, 185, 129);
-    doc.roundedRect(14, 40, 182, 25, 3, 3, 'FD');
+    doc.roundedRect(14, 40, 182, 35, 3, 3, 'FD');
     
     doc.setFontSize(10);
     doc.setTextColor(30);
-    doc.text("Total Pemasukan:", 20, 48);
-    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.totalIncome), 60, 48);
+    doc.setFont("helvetica", "normal");
+    doc.text("Saldo Awal Periode:", 20, 48);
+    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.totalSaldoAwal), 60, 48);
     
-    doc.text("Total Pengeluaran:", 20, 56);
-    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.totalExpense), 60, 56);
+    doc.text("Total Pemasukan:", 20, 56);
+    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.totalIncome), 60, 56);
+    
+    doc.text("Total Pengeluaran:", 20, 64);
+    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.totalExpense), 60, 64);
     
     doc.setFont("helvetica", "bold");
-    doc.text("Saldo Bersih:", 110, 52);
-    const balanceColor = summary.netBalance >= 0 ? [16, 185, 129] : [239, 68, 68];
+    doc.setTextColor(30);
+    doc.text("Selisih Periode:", 110, 48);
+    const selisihColor = summary.netBalance >= 0 ? [16, 185, 129] : [239, 68, 68];
+    doc.setTextColor(selisihColor[0], selisihColor[1], selisihColor[2]);
+    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.netBalance), 155, 48);
+
+    doc.setTextColor(30);
+    doc.text("Saldo Akhir Periode:", 110, 56);
+    const balanceColor = summary.totalSaldoAkhir >= 0 ? [16, 185, 129] : [239, 68, 68];
     doc.setTextColor(balanceColor[0], balanceColor[1], balanceColor[2]);
-    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.netBalance), 140, 52);
+    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.totalSaldoAkhir), 155, 56);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(30);
+    doc.text("Saldo Saat Ini (Real-time):", 110, 64);
+    const currentBalanceColor = summary.totalSaldoSaatIni >= 0 ? [16, 185, 129] : [239, 68, 68];
+    doc.setTextColor(currentBalanceColor[0], currentBalanceColor[1], currentBalanceColor[2]);
+    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.totalSaldoSaatIni), 155, 64);
     
     // Wallet Balances Table
     doc.setFontSize(12);
     doc.setTextColor(16, 185, 129);
-    doc.text("Ringkasan Saldo Dompet", 14, 75);
+    doc.text("Ringkasan Saldo Per Dompet", 14, 85);
     
     autoTable(doc, {
-      head: [["Nama Dompet/Rekening", "Saldo Saat Ini"]],
-      body: walletBalances.map(w => [w.nama, new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(w.saldo)]),
-      startY: 80,
+      head: [["Nama Dompet/Rekening", "Saldo Awal", "Selisih", "Saldo Akhir", "Saldo Saat Ini"]],
+      body: walletBalances.map(w => [
+        w.nama, 
+        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(w.saldoAwal),
+        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(w.selisih),
+        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(w.saldoAkhir),
+        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(w.saldoSaatIni)
+      ]),
+      startY: 90,
       styles: { fontSize: 9 },
-      headStyles: { fillColor: [59, 130, 246] }, // blue-500
+      headStyles: { fillColor: [59, 130, 246] },
       margin: { bottom: 10 }
     });
 
     // Transactions Table
-    const finalY = (doc as any).lastAutoTable.finalY || 80;
+    const finalY = (doc as any).lastAutoTable.finalY || 90;
     doc.setFontSize(12);
     doc.setTextColor(16, 185, 129);
     doc.text("Detail Transaksi", 14, finalY + 15);
