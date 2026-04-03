@@ -96,10 +96,42 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
 
       const walletMap = new Map(wallets.map(w => [w.id, w.name]));
 
+      // Calculate current balances for all wallets using ALL transactions
+      const walletBalances = wallets.map(w => {
+        let currentBalance = w.initialBalance || 0;
+        transactions.forEach(tx => {
+          if (tx.walletId === w.id) {
+            if (tx.type === 'income') currentBalance += tx.amount;
+            else currentBalance -= tx.amount;
+          }
+        });
+        return { nama: w.name, saldo: currentBalance };
+      });
+
       let totalIncome = 0;
       let totalExpense = 0;
 
-      const exportData = transactions.map(tx => {
+      // Filter data for the report
+      let filteredTransactions = [...transactions];
+      if (filter === 'this_month') {
+        const start = startOfMonth(new Date());
+        const end = endOfMonth(new Date());
+        filteredTransactions = filteredTransactions.filter(tx => {
+          const txDate = safeParseDate(tx.date);
+          return isWithinInterval(txDate, { start, end });
+        });
+      } else if (filter === 'date_range') {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        filteredTransactions = filteredTransactions.filter(tx => {
+          const txDate = safeParseDate(tx.date);
+          return isWithinInterval(txDate, { start, end });
+        });
+      }
+
+      const exportData = filteredTransactions.map(tx => {
         let formattedDate = '-';
         try {
           if (tx.date) {
@@ -121,8 +153,8 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
           Kategori: tx.category || '-',
           Dompet: tx.walletId ? walletMap.get(tx.walletId) || '-' : '-',
           Keterangan: tx.description || '-',
-          Pemasukan: tx.type === 'income' ? tx.amount : 0,
-          Pengeluaran: tx.type === 'expense' ? tx.amount : 0
+          Pemasukan: tx.type === 'income' ? tx.amount : null, // Use null to avoid 0 in Excel
+          Pengeluaran: tx.type === 'expense' ? tx.amount : null // Use null to avoid 0 in Excel
         };
       });
 
@@ -133,9 +165,9 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
       };
 
       if (formatType === 'excel') {
-        exportToExcel(exportData, summary);
+        exportToExcel(exportData, summary, walletBalances);
       } else {
-        exportToPDF(exportData, summary);
+        exportToPDF(exportData, summary, walletBalances);
       }
       onClose();
     } catch (error) {
@@ -146,40 +178,47 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
     }
   };
 
-  const exportToExcel = (data: any[], summary: any) => {
-    const ws = XLSX.utils.json_to_sheet(data);
+  const exportToExcel = (data: any[], summary: any, walletBalances: any[]) => {
+    const wb = XLSX.utils.book_new();
+    
+    // 1. Wallet Balances Sheet
+    const walletData = walletBalances.map(w => ({
+      'Nama Dompet/Rekening': w.nama,
+      'Saldo Saat Ini': w.saldo
+    }));
+    const wsWallets = XLSX.utils.json_to_sheet(walletData);
+    XLSX.utils.book_append_sheet(wb, wsWallets, "Saldo Dompet");
+
+    // 2. Transactions Sheet
+    const wsTxs = XLSX.utils.json_to_sheet(data);
     
     // Add summary rows at the bottom
-    XLSX.utils.sheet_add_aoa(ws, [
+    XLSX.utils.sheet_add_aoa(wsTxs, [
       [],
       ['', '', '', '', 'Total Pemasukan', summary.totalIncome, ''],
       ['', '', '', '', 'Total Pengeluaran', '', summary.totalExpense],
       ['', '', '', '', 'Saldo Bersih', summary.netBalance, ''],
     ], { origin: -1 });
 
-    // Set column widths for better readability
-    ws['!cols'] = [
-      { wch: 18 }, // Tanggal
-      { wch: 12 }, // Tipe
-      { wch: 20 }, // Kategori
-      { wch: 20 }, // Dompet
-      { wch: 35 }, // Keterangan
-      { wch: 15 }, // Pemasukan
-      { wch: 15 }, // Pengeluaran
+    // Set column widths
+    wsTxs['!cols'] = [
+      { wch: 18 }, { wch: 12 }, { wch: 20 }, { wch: 20 }, { wch: 35 }, { wch: 15 }, { wch: 15 }
+    ];
+    wsWallets['!cols'] = [
+      { wch: 30 }, { wch: 20 }
     ];
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Transaksi");
-    XLSX.writeFile(wb, `Laporan_Transaksi_${format(new Date(), 'ddMMyyyy')}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, wsTxs, "Transaksi");
+    XLSX.writeFile(wb, `Laporan_Keuangan_${format(new Date(), 'ddMMyyyy')}.xlsx`);
   };
 
-  const exportToPDF = (data: any[], summary: any) => {
+  const exportToPDF = (data: any[], summary: any, walletBalances: any[]) => {
     const doc = new jsPDF();
     
     // Header
     doc.setFontSize(18);
-    doc.setTextColor(16, 185, 129); // emerald-500
-    doc.text("Laporan Transaksi CatatUang", 14, 20);
+    doc.setTextColor(16, 185, 129);
+    doc.text("Laporan Keuangan CatatUang", 14, 20);
     
     doc.setFontSize(10);
     doc.setTextColor(100);
@@ -192,7 +231,7 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
     doc.text(`Filter: ${filterText}`, 14, 34);
 
     // Summary Box
-    doc.setFillColor(240, 253, 244); // emerald-50
+    doc.setFillColor(240, 253, 244);
     doc.setDrawColor(16, 185, 129);
     doc.roundedRect(14, 40, 182, 25, 3, 3, 'FD');
     
@@ -210,6 +249,26 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
     doc.setTextColor(balanceColor[0], balanceColor[1], balanceColor[2]);
     doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.netBalance), 140, 52);
     
+    // Wallet Balances Table
+    doc.setFontSize(12);
+    doc.setTextColor(16, 185, 129);
+    doc.text("Ringkasan Saldo Dompet", 14, 75);
+    
+    autoTable(doc, {
+      head: [["Nama Dompet/Rekening", "Saldo Saat Ini"]],
+      body: walletBalances.map(w => [w.nama, new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(w.saldo)]),
+      startY: 80,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [59, 130, 246] }, // blue-500
+      margin: { bottom: 10 }
+    });
+
+    // Transactions Table
+    const finalY = (doc as any).lastAutoTable.finalY || 80;
+    doc.setFontSize(12);
+    doc.setTextColor(16, 185, 129);
+    doc.text("Detail Transaksi", 14, finalY + 15);
+
     const tableColumn = ["Tanggal", "Tipe", "Kategori", "Dompet", "Keterangan", "Pemasukan", "Pengeluaran"];
     const tableRows = data.map(item => [
       item.Tanggal,
@@ -217,14 +276,14 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
       item.Kategori,
       item.Dompet,
       item.Keterangan,
-      item.Pemasukan > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.Pemasukan) : '-',
-      item.Pengeluaran > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.Pengeluaran) : '-'
+      item.Pemasukan ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.Pemasukan) : '-',
+      item.Pengeluaran ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.Pengeluaran) : '-'
     ]);
 
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 75,
+      startY: finalY + 20,
       styles: { fontSize: 8, cellPadding: 3 },
       headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [249, 250, 251] },
@@ -234,7 +293,7 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
       }
     });
 
-    doc.save(`Laporan_Transaksi_${format(new Date(), 'ddMMyyyy')}.pdf`);
+    doc.save(`Laporan_Keuangan_${format(new Date(), 'ddMMyyyy')}.pdf`);
   };
 
   return (
