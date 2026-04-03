@@ -96,6 +96,9 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
 
       const walletMap = new Map(wallets.map(w => [w.id, w.name]));
 
+      let totalIncome = 0;
+      let totalExpense = 0;
+
       const exportData = transactions.map(tx => {
         let formattedDate = '-';
         try {
@@ -106,21 +109,33 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
           console.error("Error formatting date:", tx.date, e);
         }
 
+        if (tx.type === 'income') {
+          totalIncome += tx.amount;
+        } else {
+          totalExpense += tx.amount;
+        }
+
         return {
-          ID: tx.id,
-          Tipe: tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
-          Jumlah: tx.amount,
-          Keterangan: tx.description,
           Tanggal: formattedDate,
+          Tipe: tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
           Kategori: tx.category || '-',
-          Dompet: tx.walletId ? walletMap.get(tx.walletId) || '-' : '-'
+          Dompet: tx.walletId ? walletMap.get(tx.walletId) || '-' : '-',
+          Keterangan: tx.description || '-',
+          Pemasukan: tx.type === 'income' ? tx.amount : 0,
+          Pengeluaran: tx.type === 'expense' ? tx.amount : 0
         };
       });
 
+      const summary = {
+        totalIncome,
+        totalExpense,
+        netBalance: totalIncome - totalExpense
+      };
+
       if (formatType === 'excel') {
-        exportToExcel(exportData);
+        exportToExcel(exportData, summary);
       } else {
-        exportToPDF(exportData);
+        exportToPDF(exportData, summary);
       }
       onClose();
     } catch (error) {
@@ -131,34 +146,92 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
     }
   };
 
-  const exportToExcel = (data: any[]) => {
+  const exportToExcel = (data: any[], summary: any) => {
     const ws = XLSX.utils.json_to_sheet(data);
+    
+    // Add summary rows at the bottom
+    XLSX.utils.sheet_add_aoa(ws, [
+      [],
+      ['', '', '', '', 'Total Pemasukan', summary.totalIncome, ''],
+      ['', '', '', '', 'Total Pengeluaran', '', summary.totalExpense],
+      ['', '', '', '', 'Saldo Bersih', summary.netBalance, ''],
+    ], { origin: -1 });
+
+    // Set column widths for better readability
+    ws['!cols'] = [
+      { wch: 18 }, // Tanggal
+      { wch: 12 }, // Tipe
+      { wch: 20 }, // Kategori
+      { wch: 20 }, // Dompet
+      { wch: 35 }, // Keterangan
+      { wch: 15 }, // Pemasukan
+      { wch: 15 }, // Pengeluaran
+    ];
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Transaksi");
     XLSX.writeFile(wb, `Laporan_Transaksi_${format(new Date(), 'ddMMyyyy')}.xlsx`);
   };
 
-  const exportToPDF = (data: any[]) => {
+  const exportToPDF = (data: any[], summary: any) => {
     const doc = new jsPDF();
-    doc.text("Laporan Transaksi CatatUang", 14, 15);
     
-    const tableColumn = ["ID", "Tipe", "Jumlah", "Keterangan", "Tanggal", "Kategori", "Dompet"];
+    // Header
+    doc.setFontSize(18);
+    doc.setTextColor(16, 185, 129); // emerald-500
+    doc.text("Laporan Transaksi CatatUang", 14, 20);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Dicetak pada: ${format(new Date(), 'dd MMM yyyy HH:mm', { locale: id })}`, 14, 28);
+    
+    let filterText = 'Semua Data';
+    if (filter === 'this_month') filterText = `Bulan Ini (${format(new Date(), 'MMMM yyyy', { locale: id })})`;
+    else if (filter === 'date_range') filterText = `Periode: ${format(new Date(startDate), 'dd MMM yyyy', { locale: id })} - ${format(new Date(endDate), 'dd MMM yyyy', { locale: id })}`;
+    
+    doc.text(`Filter: ${filterText}`, 14, 34);
+
+    // Summary Box
+    doc.setFillColor(240, 253, 244); // emerald-50
+    doc.setDrawColor(16, 185, 129);
+    doc.roundedRect(14, 40, 182, 25, 3, 3, 'FD');
+    
+    doc.setFontSize(10);
+    doc.setTextColor(30);
+    doc.text("Total Pemasukan:", 20, 48);
+    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.totalIncome), 60, 48);
+    
+    doc.text("Total Pengeluaran:", 20, 56);
+    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.totalExpense), 60, 56);
+    
+    doc.setFont("helvetica", "bold");
+    doc.text("Saldo Bersih:", 110, 52);
+    const balanceColor = summary.netBalance >= 0 ? [16, 185, 129] : [239, 68, 68];
+    doc.setTextColor(balanceColor[0], balanceColor[1], balanceColor[2]);
+    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.netBalance), 140, 52);
+    
+    const tableColumn = ["Tanggal", "Tipe", "Kategori", "Dompet", "Keterangan", "Pemasukan", "Pengeluaran"];
     const tableRows = data.map(item => [
-      item.ID,
-      item.Tipe,
-      new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.Jumlah),
-      item.Keterangan,
       item.Tanggal,
+      item.Tipe,
       item.Kategori,
-      item.Dompet
+      item.Dompet,
+      item.Keterangan,
+      item.Pemasukan > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.Pemasukan) : '-',
+      item.Pengeluaran > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.Pengeluaran) : '-'
     ]);
 
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 20,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [16, 185, 129] } // emerald-500
+      startY: 75,
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+      columnStyles: {
+        5: { halign: 'right' },
+        6: { halign: 'right' }
+      }
     });
 
     doc.save(`Laporan_Transaksi_${format(new Date(), 'ddMMyyyy')}.pdf`);
