@@ -201,11 +201,11 @@ export default function AddTransactionModal({
           if (goalSnap.exists()) {
             const currentAmount = goalSnap.data().currentAmount || 0;
             // Reverse the old amount, then apply the new amount
-            const oldAmountAdjust = editingTransaction.type === 'expense' ? editingTransaction.amount : -editingTransaction.amount;
-            const newAmountAdjust = type === 'expense' ? numericAmount : -numericAmount;
+            const oldImpact = editingTransaction.type === 'income' ? editingTransaction.amount : -editingTransaction.amount;
+            const newImpact = type === 'income' ? numericAmount : -numericAmount;
             
             await updateDoc(goalRef, {
-              currentAmount: currentAmount - oldAmountAdjust + newAmountAdjust
+              currentAmount: currentAmount - oldImpact + newImpact
             });
           }
         }

@@ -131,6 +131,12 @@ export default function Analysis({
           groupTotals.uncategorized += item.value;
         }
       } else if (
+        item.name.trim().toLowerCase() === 'tabungan' || 
+        item.name.trim().toLowerCase() === 'investasi' || 
+        item.name.trim().toLowerCase() === 'savings'
+      ) {
+        groupTotals.savings += item.value;
+      } else if (
         item.name === 'Hutang/Piutang' || 
         item.name.toLowerCase().includes('hutang') || 
         item.name.toLowerCase().includes('pinjaman') || 
@@ -158,7 +164,11 @@ export default function Analysis({
             groupTotals.savings += item.value;
           }
         }
-      } else if (item.name.toLowerCase() === 'tabungan' || item.name.toLowerCase() === 'investasi') {
+      } else if (
+        item.name.trim().toLowerCase() === 'tabungan' || 
+        item.name.trim().toLowerCase() === 'investasi' || 
+        item.name.trim().toLowerCase() === 'savings'
+      ) {
         groupTotals.savings += item.value;
       }
     });

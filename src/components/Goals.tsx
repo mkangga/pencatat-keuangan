@@ -106,10 +106,10 @@ export default function Goals({ user }: { user: User }) {
       if (numericInitialAmount > 0 && initialWalletId) {
         addDoc(collection(db, 'transactions'), {
           userId: user.uid,
-          type: 'expense',
+          type: 'income',
           amount: numericInitialAmount,
           description: `Saldo awal target: ${name}`,
-          category: 'Savings',
+          category: 'Tabungan',
           walletId: initialWalletId,
           goalId: goalRef.id,
           date: new Date().toISOString(),
@@ -166,10 +166,10 @@ export default function Goals({ user }: { user: User }) {
       if (diff !== 0) {
         addDoc(collection(db, 'transactions'), {
           userId: user.uid,
-          type: diff > 0 ? 'expense' : 'income',
+          type: diff > 0 ? 'income' : 'expense',
           amount: Math.abs(diff),
           description: `Penyesuaian tabungan: ${editName}`,
-          category: 'Savings',
+          category: 'Tabungan',
           walletId: editWalletId,
           goalId: editingGoal.id,
           date: new Date().toISOString(),
@@ -237,13 +237,13 @@ export default function Goals({ user }: { user: User }) {
         handleFirestoreError(error, OperationType.WRITE, 'goals/progress');
       });
 
-      // Create expense transaction
+      // Create income transaction
       addDoc(collection(db, 'transactions'), {
         userId: user.uid,
-        type: 'expense',
+        type: 'income',
         amount: numericAmount,
         description: `Menabung untuk: ${goal.name}`,
-        category: 'Savings',
+        category: 'Tabungan',
         walletId: progressWalletId,
         goalId: goal.id,
         date: new Date().toISOString(),

@@ -373,7 +373,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
         const goalSnap = await getDoc(goalRef);
         if (goalSnap.exists()) {
           const currentAmount = goalSnap.data().currentAmount || 0;
-          const amountToAdjust = txToDelete.type === 'expense' ? -txToDelete.amount : txToDelete.amount;
+          const amountToAdjust = txToDelete.type === 'income' ? -txToDelete.amount : txToDelete.amount;
           await updateDoc(goalRef, {
             currentAmount: currentAmount + amountToAdjust
           });
