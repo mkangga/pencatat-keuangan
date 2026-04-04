@@ -285,7 +285,7 @@ export default function Categories({ user }: { user: User }) {
                 className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100"
               >
                 <option value="" disabled>Pilih Kelompok</option>
-                {categoryGroups.map(g => (
+                {categoryGroups.filter(g => g.type !== 'savings').map(g => (
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
               </select>
@@ -408,7 +408,7 @@ export default function Categories({ user }: { user: User }) {
                     className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100"
                   >
                     <option value="" disabled>Pilih Kelompok</option>
-                    {categoryGroups.map(g => (
+                    {categoryGroups.filter(g => g.type !== 'savings').map(g => (
                       <option key={g.id} value={g.id}>{g.name}</option>
                     ))}
                   </select>

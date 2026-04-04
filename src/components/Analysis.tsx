@@ -144,6 +144,25 @@ export default function Analysis({
       }
     });
 
+    incomePieData.forEach(item => {
+      const category = categories.find(c => 
+        c.type === 'income' && 
+        c.name.trim().toLowerCase() === item.name.trim().toLowerCase()
+      );
+      
+      if (category && category.groupId) {
+        const group = categoryGroups.find(g => g.id === category.groupId);
+        if (group) {
+          const groupType = group.type.toLowerCase();
+          if (groupType === 'savings' || groupType === 'tabungan' || groupType === 'investasi') {
+            groupTotals.savings += item.value;
+          }
+        }
+      } else if (item.name.toLowerCase() === 'tabungan' || item.name.toLowerCase() === 'investasi') {
+        groupTotals.savings += item.value;
+      }
+    });
+
     const totalExpense = Object.values(groupTotals).reduce((a, b) => a + b, 0);
 
     const data = [
@@ -181,9 +200,9 @@ export default function Analysis({
         conclusion = insights.join(' ');
       }
     }
-
+    
     return { data, conclusion };
-  }, [expensePieData, categories, categoryGroups]);
+  }, [expensePieData, incomePieData, categories, categoryGroups]);
 
   const monthlySummaryData = useMemo(() => {
     const data = [];

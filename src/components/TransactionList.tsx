@@ -2,7 +2,7 @@ import { Transaction } from '../types';
 import { PlusCircle, MinusCircle, Trash2, Edit2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { deleteDoc, doc } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useState } from 'react';
 import ConfirmModal from './ConfirmModal';
@@ -30,7 +30,20 @@ export default function TransactionList({ transactions, type, onEdit, onViewDeta
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
+      const txToDelete = transactions.find(t => t.id === deleteId);
       await deleteDoc(doc(db, 'transactions', deleteId));
+      
+      if (txToDelete && txToDelete.goalId) {
+        const goalRef = doc(db, 'goals', txToDelete.goalId);
+        const goalSnap = await getDoc(goalRef);
+        if (goalSnap.exists()) {
+          const currentAmount = goalSnap.data().currentAmount || 0;
+          const amountToAdjust = txToDelete.type === 'expense' ? -txToDelete.amount : txToDelete.amount;
+          await updateDoc(goalRef, {
+            currentAmount: currentAmount + amountToAdjust
+          });
+        }
+      }
       setDeleteId(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `transactions/${deleteId}`);

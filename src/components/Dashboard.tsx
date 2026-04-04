@@ -324,7 +324,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
         if (tx.walletId && balances[tx.walletId] !== undefined) {
           if (tx.type === 'income') {
             balances[tx.walletId] += tx.amount;
-          } else {
+          } else if (tx.type === 'expense' && tx.category !== 'Savings' && tx.category !== 'Tabungan') {
             balances[tx.walletId] -= tx.amount;
           }
         }
@@ -368,15 +368,14 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
       const txToDelete = transactions.find(t => t.id === id);
       await deleteDoc(doc(db, 'transactions', id));
       
-      if (txToDelete && txToDelete.type === 'expense' && txToDelete.goalId) {
-        // We need to fetch the goal to update it, or we can just hope it's in the Goals component state.
-        // Since we don't have goals in Dashboard state, we fetch it directly.
+      if (txToDelete && txToDelete.goalId) {
         const goalRef = doc(db, 'goals', txToDelete.goalId);
         const goalSnap = await getDoc(goalRef);
         if (goalSnap.exists()) {
           const currentAmount = goalSnap.data().currentAmount || 0;
+          const amountToAdjust = txToDelete.type === 'expense' ? -txToDelete.amount : txToDelete.amount;
           await updateDoc(goalRef, {
-            currentAmount: currentAmount - txToDelete.amount
+            currentAmount: currentAmount + amountToAdjust
           });
         }
       }

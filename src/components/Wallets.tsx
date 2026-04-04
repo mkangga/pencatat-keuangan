@@ -55,8 +55,11 @@ export default function Wallets({ user }: { user: User }) {
       if (tx.walletId && balances[tx.walletId] !== undefined) {
         if (tx.type === 'income') {
           balances[tx.walletId] += tx.amount;
-        } else {
-          balances[tx.walletId] -= tx.amount;
+        } else if (tx.type === 'expense') {
+          // Ignore 'Savings' expenses so they don't reduce the wallet balance
+          if (tx.category !== 'Savings' && tx.category !== 'Tabungan') {
+            balances[tx.walletId] -= tx.amount;
+          }
         }
       }
     });

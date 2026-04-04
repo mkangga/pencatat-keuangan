@@ -109,16 +109,16 @@ export default function ExportModal({ isOpen, onClose, user, wallets }: ExportMo
             // Balance BEFORE the period starts
             if (txDate < periodStart) {
               if (tx.type === 'income') balanceAtStart += tx.amount;
-              else balanceAtStart -= tx.amount;
+              else if (tx.type === 'expense' && tx.category !== 'Savings' && tx.category !== 'Tabungan') balanceAtStart -= tx.amount;
             }
             // Balance AT THE END of the period
             if (txDate <= periodEnd) {
               if (tx.type === 'income') balanceAtEnd += tx.amount;
-              else balanceAtEnd -= tx.amount;
+              else if (tx.type === 'expense' && tx.category !== 'Savings' && tx.category !== 'Tabungan') balanceAtEnd -= tx.amount;
             }
             // CURRENT Balance (all time)
             if (tx.type === 'income') currentBalance += tx.amount;
-            else currentBalance -= tx.amount;
+            else if (tx.type === 'expense' && tx.category !== 'Savings' && tx.category !== 'Tabungan') currentBalance -= tx.amount;
           }
         });
         return { 

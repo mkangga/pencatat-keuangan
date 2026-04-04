@@ -1,6 +1,6 @@
 import { useState, FormEvent, useEffect, ChangeEvent, useMemo } from 'react';
 import { User } from 'firebase/auth';
-import { collection, addDoc, serverTimestamp, updateDoc, doc, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, updateDoc, doc, query, where, onSnapshot, getDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { X, Wallet as WalletIcon, Tag, AlertCircle, Target } from 'lucide-react';
 import { Wallet, Category, Transaction, Goal } from '../types';
@@ -195,6 +195,20 @@ export default function AddTransactionModal({
       txData.walletId = walletId;
 
       if (editingTransaction) {
+        if (editingTransaction.goalId) {
+          const goalRef = doc(db, 'goals', editingTransaction.goalId);
+          const goalSnap = await getDoc(goalRef);
+          if (goalSnap.exists()) {
+            const currentAmount = goalSnap.data().currentAmount || 0;
+            // Reverse the old amount, then apply the new amount
+            const oldAmountAdjust = editingTransaction.type === 'expense' ? editingTransaction.amount : -editingTransaction.amount;
+            const newAmountAdjust = type === 'expense' ? numericAmount : -numericAmount;
+            
+            await updateDoc(goalRef, {
+              currentAmount: currentAmount - oldAmountAdjust + newAmountAdjust
+            });
+          }
+        }
         updateDoc(doc(db, 'transactions', editingTransaction.id), txData).catch(error => {
           handleFirestoreError(error, OperationType.WRITE, 'transactions');
         });
