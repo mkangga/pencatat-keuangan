@@ -26,6 +26,7 @@ import BottomNav from './BottomNav';
 import FloatingActionButton from './FloatingActionButton';
 import { isToday, isSameMonth, parseISO, isSameDay, format, addDays, subDays, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { motion, AnimatePresence } from 'motion/react';
 import { checkAndNotify } from '../services/notificationService';
 
 interface DashboardProps {
@@ -471,6 +472,58 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
     }
   };
 
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe || isRightSwipe) {
+      if (!isRangeMode) {
+        const currentDate = safeParseDate(selectedDate);
+        if (isLeftSwipe) {
+          // Swipe left -> Next day
+          setSlideDirection('left');
+          setSelectedDate(format(addDays(currentDate, 1), 'yyyy-MM-dd'));
+        } else if (isRightSwipe) {
+          // Swipe right -> Previous day
+          setSlideDirection('right');
+          setSelectedDate(format(subDays(currentDate, 1), 'yyyy-MM-dd'));
+        }
+      }
+    }
+  };
+
+  const slideVariants = {
+    enter: (direction: 'left' | 'right') => ({
+      x: direction === 'left' ? 30 : -30,
+      opacity: 0
+    }),
+    center: {
+      x: 0,
+      opacity: 1
+    },
+    exit: (direction: 'left' | 'right') => ({
+      x: direction === 'left' ? -30 : 30,
+      opacity: 0
+    })
+  };
+
   return (
     <div className="flex h-screen bg-[#f8fafc] dark:bg-gray-900 overflow-hidden transition-colors duration-300">
       <Sidebar user={user} className={`hidden md:flex transition-all duration-300 h-full ${isSidebarCollapsed ? 'w-20' : 'w-64'}`} isCollapsed={isSidebarCollapsed} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
@@ -494,7 +547,12 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
         <main ref={mainRef} className="flex-1 overflow-y-auto p-6 lg:p-8 pb-24">
           <Routes>
             <Route path="/" element={
-              <div className="max-w-7xl mx-auto space-y-6">
+              <div 
+                className="max-w-7xl mx-auto space-y-6"
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+              >
                 <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300">
                   <div className="flex flex-col space-y-6">
                     {/* Header Row: Title & Controls */}
@@ -681,53 +739,66 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-600 to-indigo-700 text-white p-6 rounded-3xl shadow-xl border border-purple-400/20">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-sm font-semibold tracking-wide uppercase opacity-80">
-                      Ringkasan Transaksi
-                    </h2>
-                    <span className="text-xs bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm font-medium">
-                      {isRangeMode 
-                        ? `${format(safeParseDate(startDateRange), 'd MMM')} - ${format(safeParseDate(endDateRange), 'd MMM yyyy', { locale: id })}`
-                        : format(safeParseDate(selectedDate), 'd MMM yyyy', { locale: id })}
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
-                    <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 min-w-0">
-                      <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Pemasukan</p>
-                      {!transactionsLoaded ? (
-                        <div className="h-6 w-24 bg-white/20 animate-pulse rounded-lg mt-1"></div>
-                      ) : (
-                        <p className="text-sm sm:text-lg font-extrabold break-words text-right sm:text-center">
-                          + {totalIncomeDaily.toLocaleString('id-ID')}
-                        </p>
-                      )}
+                <AnimatePresence mode="wait" custom={slideDirection}>
+                  <motion.div
+                    key={selectedDate + (isRangeMode ? 'range' : 'single')}
+                    custom={slideDirection}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ type: "tween", duration: 0.3, ease: "easeInOut" }}
+                    className="space-y-6"
+                  >
+                    <div className="bg-gradient-to-br from-purple-600 to-indigo-700 text-white p-6 rounded-3xl shadow-xl border border-purple-400/20">
+                      <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-sm font-semibold tracking-wide uppercase opacity-80">
+                          Ringkasan Transaksi
+                        </h2>
+                        <span className="text-xs bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm font-medium">
+                          {isRangeMode 
+                            ? `${format(safeParseDate(startDateRange), 'd MMM')} - ${format(safeParseDate(endDateRange), 'd MMM yyyy', { locale: id })}`
+                            : format(safeParseDate(selectedDate), 'd MMM yyyy', { locale: id })}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+                        <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 min-w-0">
+                          <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Pemasukan</p>
+                          {!transactionsLoaded ? (
+                            <div className="h-6 w-24 bg-white/20 animate-pulse rounded-lg mt-1"></div>
+                          ) : (
+                            <p className="text-sm sm:text-lg font-extrabold break-words text-right sm:text-center">
+                              + {totalIncomeDaily.toLocaleString('id-ID')}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 border-t border-white/10 sm:border-t-0 sm:border-x sm:border-white/10 min-w-0">
+                          <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Pengeluaran</p>
+                          {!transactionsLoaded ? (
+                            <div className="h-6 w-24 bg-white/20 animate-pulse rounded-lg mt-1"></div>
+                          ) : (
+                            <p className="text-sm sm:text-lg font-extrabold break-words text-right sm:text-center">
+                              - {totalExpenseDaily.toLocaleString('id-ID')}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 border-t border-white/10 sm:border-t-0 min-w-0">
+                          <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Selisih</p>
+                          {!transactionsLoaded ? (
+                            <div className="h-6 w-24 bg-white/20 animate-pulse rounded-lg mt-1"></div>
+                          ) : (
+                            <p className={`text-sm sm:text-lg font-extrabold break-words text-right sm:text-center ${balanceDaily >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                              {balanceDaily >= 0 ? '+' : ''}{balanceDaily.toLocaleString('id-ID')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 border-t border-white/10 sm:border-t-0 sm:border-x sm:border-white/10 min-w-0">
-                      <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Pengeluaran</p>
-                      {!transactionsLoaded ? (
-                        <div className="h-6 w-24 bg-white/20 animate-pulse rounded-lg mt-1"></div>
-                      ) : (
-                        <p className="text-sm sm:text-lg font-extrabold break-words text-right sm:text-center">
-                          - {totalExpenseDaily.toLocaleString('id-ID')}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between sm:flex-col sm:justify-center sm:text-center p-1 sm:p-0 border-t border-white/10 sm:border-t-0 min-w-0">
-                      <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold flex-shrink-0">Selisih</p>
-                      {!transactionsLoaded ? (
-                        <div className="h-6 w-24 bg-white/20 animate-pulse rounded-lg mt-1"></div>
-                      ) : (
-                        <p className={`text-sm sm:text-lg font-extrabold break-words text-right sm:text-center ${balanceDaily >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
-                          {balanceDaily >= 0 ? '+' : ''}{balanceDaily.toLocaleString('id-ID')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                <GroupedTransactionList transactions={dailyTransactions} onEdit={openEditModal} onViewDetail={openDetailModal} />
+                    
+                    <GroupedTransactionList transactions={dailyTransactions} onEdit={openEditModal} onViewDetail={openDetailModal} />
+                  </motion.div>
+                </AnimatePresence>
               </div>
             } />
             <Route path="/uang-masuk" element={
