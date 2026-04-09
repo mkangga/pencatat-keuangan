@@ -17,6 +17,7 @@ export interface Debt {
   userId: string;
   type: 'payable' | 'receivable';
   amount: number;
+  expectedAmount?: number;
   description: string;
   status: 'unpaid' | 'paid';
   dueDate?: string; // ISO string

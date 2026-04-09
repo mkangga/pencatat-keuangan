@@ -62,6 +62,7 @@
         "userId": { "type": "string" },
         "type": { "type": "string", "enum": ["payable", "receivable"] },
         "amount": { "type": "number" },
+        "expectedAmount": { "type": "number" },
         "description": { "type": "string" },
         "status": { "type": "string", "enum": ["unpaid", "paid"] },
         "dueDate": { "type": "string", "format": "date-time" },

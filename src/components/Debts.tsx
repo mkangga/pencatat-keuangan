@@ -16,6 +16,7 @@ interface DebtsProps {
 export default function Debts({ user, wallets }: DebtsProps) {
   const [debts, setDebts] = useState<Debt[]>([]);
   const [amount, setAmount] = useState('');
+  const [expectedAmount, setExpectedAmount] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<'payable' | 'receivable'>('payable');
   const [dueDate, setDueDate] = useState('');
@@ -74,6 +75,10 @@ export default function Debts({ user, wallets }: DebtsProps) {
     setAmount(formatNominal(e.target.value));
   };
 
+  const handleExpectedAmountChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setExpectedAmount(formatNominal(e.target.value));
+  };
+
   const formatCurrency = (amount: number) => {
     const formatted = new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -86,14 +91,15 @@ export default function Debts({ user, wallets }: DebtsProps) {
 
   const summary = useMemo(() => {
     const unpaid = debts.filter(d => d.status === 'unpaid');
-    const totalPayable = unpaid.filter(d => d.type === 'payable').reduce((sum, d) => sum + d.amount, 0);
-    const totalReceivable = unpaid.filter(d => d.type === 'receivable').reduce((sum, d) => sum + d.amount, 0);
+    const totalPayable = unpaid.filter(d => d.type === 'payable').reduce((sum, d) => sum + (d.expectedAmount || d.amount), 0);
+    const totalReceivable = unpaid.filter(d => d.type === 'receivable').reduce((sum, d) => sum + (d.expectedAmount || d.amount), 0);
     return { totalPayable, totalReceivable };
   }, [debts]);
 
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault();
     const numericAmount = Number(parseNominal(amount));
+    const numericExpectedAmount = expectedAmount ? Number(parseNominal(expectedAmount)) : numericAmount;
     if (!numericAmount || !description) return;
     setLoading(true);
     
@@ -105,6 +111,7 @@ export default function Debts({ user, wallets }: DebtsProps) {
         userId: user.uid,
         type,
         amount: numericAmount,
+        expectedAmount: numericExpectedAmount,
         description,
         status: 'unpaid',
         dueDate: dueDate || null,
@@ -129,6 +136,7 @@ export default function Debts({ user, wallets }: DebtsProps) {
       batch.commit().catch(error => handleFirestoreError(error, OperationType.WRITE, 'debts'));
 
       setAmount('');
+      setExpectedAmount('');
       setDescription('');
       setDueDate('');
       setRecordTransaction(false);
@@ -160,12 +168,13 @@ export default function Debts({ user, wallets }: DebtsProps) {
       batch.update(debtRef, { status: 'paid' });
 
       if (payRecordTransaction && payWalletId) {
+        const amountToPay = payDebt.expectedAmount || payDebt.amount;
         const txRef = doc(collection(db, 'transactions'));
         batch.set(txRef, {
           userId: user.uid,
           // Pay Hutang (I pay back) -> Expense. Pay Piutang (I get paid back) -> Income.
           type: payDebt.type === 'payable' ? 'expense' : 'income',
-          amount: payDebt.amount,
+          amount: amountToPay,
           description: `${payDebt.type === 'payable' ? 'Bayar hutang ke' : 'Terima pembayaran dari'}: ${payDebt.description}`,
           category: 'Hutang/Piutang',
           date: new Date().toISOString(),
@@ -250,7 +259,7 @@ export default function Debts({ user, wallets }: DebtsProps) {
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300">
         <h2 className="text-lg font-semibold mb-6 text-gray-800 dark:text-gray-100">Catat Baru</h2>
         <form onSubmit={handleAdd} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Jenis</label>
               <select value={type} onChange={e => setType(e.target.value as any)} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300">
@@ -259,10 +268,14 @@ export default function Debts({ user, wallets }: DebtsProps) {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Jumlah (Rp)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Jumlah Dipinjam (Rp)</label>
               <input type="text" inputMode="numeric" value={amount} onChange={handleAmountChange} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300" placeholder="0" required />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Jumlah Akan Dibayar (Rp)</label>
+              <input type="text" inputMode="numeric" value={expectedAmount} onChange={handleExpectedAmountChange} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300" placeholder="Sama dengan dipinjam" />
+            </div>
+            <div className="lg:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Keterangan / Nama</label>
               <input type="text" maxLength={100} value={description} onChange={e => setDescription(e.target.value)} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300" placeholder="Contoh: Pinjam Budi" required />
             </div>
@@ -360,6 +373,11 @@ export default function Debts({ user, wallets }: DebtsProps) {
                 </p>
                 <p className={`text-xl font-bold mt-1 ${debt.status === 'paid' ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
                   {formatCurrency(debt.amount)}
+                  {debt.expectedAmount && debt.expectedAmount !== debt.amount && (
+                    <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+                      (Kembali: {formatCurrency(debt.expectedAmount)})
+                    </span>
+                  )}
                 </p>
               </div>
               
@@ -420,7 +438,12 @@ export default function Debts({ user, wallets }: DebtsProps) {
             <div className="p-6 space-y-6">
               <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-xl">
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{payDebt.description}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(payDebt.amount)}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(payDebt.expectedAmount || payDebt.amount)}</p>
+                {payDebt.expectedAmount && payDebt.expectedAmount !== payDebt.amount && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    (Pinjaman awal: {formatCurrency(payDebt.amount)})
+                  </p>
+                )}
               </div>
 
               <div className="space-y-3">
