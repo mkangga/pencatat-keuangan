@@ -23,6 +23,12 @@ export default function Wallets({ user }: { user: User }) {
   const [selectedWallet, setSelectedWallet] = useState<WalletType | null>(null);
   const [newBalance, setNewBalance] = useState('');
 
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [fromWalletId, setFromWalletId] = useState('');
+  const [toWalletId, setToWalletId] = useState('');
+  const [transferAmount, setTransferAmount] = useState('');
+  const [transferNote, setTransferNote] = useState('');
+
   useEffect(() => {
     const q = query(collection(db, 'wallets'), where('userId', '==', user.uid));
     const unsub = onSnapshot(q, (snap) => {
@@ -185,22 +191,79 @@ export default function Wallets({ user }: { user: User }) {
     }
   };
 
+  const handleTransfer = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!fromWalletId || !toWalletId || fromWalletId === toWalletId) return;
+    const numericAmount = Number(parseNominal(transferAmount));
+    if (numericAmount <= 0) return;
+
+    setLoading(true);
+    try {
+      const fromWallet = wallets.find(w => w.id === fromWalletId);
+      const toWallet = wallets.find(w => w.id === toWalletId);
+
+      // Record expense in source wallet
+      await addDoc(collection(db, 'transactions'), {
+        userId: user.uid,
+        type: 'expense',
+        amount: numericAmount,
+        description: `Transfer ke ${toWallet?.name}${transferNote ? ` • ${transferNote}` : ''}`,
+        category: 'Pindah Saldo',
+        walletId: fromWalletId,
+        date: new Date().toISOString(),
+        createdAt: serverTimestamp()
+      });
+
+      // Record income in destination wallet
+      await addDoc(collection(db, 'transactions'), {
+        userId: user.uid,
+        type: 'income',
+        amount: numericAmount,
+        description: `Transfer dari ${fromWallet?.name}${transferNote ? ` • ${transferNote}` : ''}`,
+        category: 'Pindah Saldo',
+        walletId: toWalletId,
+        date: new Date().toISOString(),
+        createdAt: serverTimestamp()
+      });
+
+      setIsTransferModalOpen(false);
+      setTransferAmount('');
+      setFromWalletId('');
+      setToWalletId('');
+      setTransferNote('');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'transactions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const isDataReady = walletsLoaded && transactionsLoaded;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Dompet & Rekening</h1>
-        <div className="flex flex-col">
-          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Total Saldo</span>
-          {!isDataReady ? (
-            <div className="h-9 w-48 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg mt-1"></div>
-          ) : (
-            <span className={`text-3xl font-black tracking-tight ${totalSaldo >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-              {formatCurrency(totalSaldo)}
-            </span>
-          )}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-sans">Dompet & Rekening</h1>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Total Saldo</span>
+            {!isDataReady ? (
+              <div className="h-9 w-48 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg mt-1"></div>
+            ) : (
+              <span className={`text-3xl font-black tracking-tight ${totalSaldo >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                {formatCurrency(totalSaldo)}
+              </span>
+            )}
+          </div>
         </div>
+        
+        <button 
+          onClick={() => setIsTransferModalOpen(true)}
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-2xl font-bold hover:bg-blue-600 transition-all shadow-lg shadow-blue-200 dark:shadow-none active:scale-95"
+        >
+          <RefreshCw size={18} />
+          Pindah Saldo
+        </button>
       </div>
       
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-8 transition-colors duration-300">
@@ -418,6 +481,101 @@ export default function Wallets({ user }: { user: User }) {
                       className="flex-1 px-6 py-3 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200 dark:shadow-none disabled:opacity-50"
                     >
                       {loading ? 'Menyimpan...' : 'Simpan'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {isTransferModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100 dark:border-gray-700"
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Pindah Saldo</h3>
+                  <button onClick={() => setIsTransferModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-400">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleTransfer} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1.5">Dari</label>
+                      <select 
+                        value={fromWalletId} 
+                        onChange={e => setFromWalletId(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium text-gray-800 dark:text-gray-100"
+                        required
+                      >
+                        <option value="">Pilih Dompet</option>
+                        {wallets.map(w => (
+                          <option key={w.id} value={w.id}>{w.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1.5">Ke</label>
+                      <select 
+                        value={toWalletId} 
+                        onChange={e => setToWalletId(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium text-gray-800 dark:text-gray-100"
+                        required
+                      >
+                        <option value="">Pilih Dompet</option>
+                        {wallets.map(w => (
+                          <option key={w.id} value={w.id} disabled={w.id === fromWalletId}>{w.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1.5">Jumlah (Rp)</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={transferAmount}
+                      onChange={e => setTransferAmount(formatNominal(e.target.value))}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-xl font-bold text-gray-800 dark:text-gray-100"
+                      placeholder="0"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1.5">Catatan (Opsional)</label>
+                    <input
+                      type="text"
+                      maxLength={50}
+                      value={transferNote}
+                      onChange={e => setTransferNote(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-gray-800 dark:text-gray-100"
+                      placeholder="Contoh: Titip tarik tunai"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsTransferModalOpen(false)}
+                      className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-2xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading || !fromWalletId || !toWalletId || fromWalletId === toWalletId}
+                      className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-200 dark:shadow-none disabled:opacity-50"
+                    >
+                      {loading ? 'Memproses...' : 'Transfer'}
                     </button>
                   </div>
                 </form>

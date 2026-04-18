@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent, useRef, useMemo } from 'react';
+import { useState, useEffect, FormEvent, useRef, useMemo, TouchEvent } from 'react';
 import { User, updateProfile } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, limit, deleteDoc, doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -478,12 +478,12 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
 
   const minSwipeDistance = 50;
 
-  const onTouchStart = (e: React.TouchEvent) => {
+  const onTouchStart = (e: TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
   };
 
-  const onTouchMove = (e: React.TouchEvent) => {
+  const onTouchMove = (e: TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
   };
 
@@ -622,8 +622,9 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                     {/* Date Selector Row */}
                     {isFilterExpanded && (
                       <>
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-4 border-t border-gray-50 dark:border-gray-700/50 animate-in fade-in slide-in-from-top-2 duration-300">
-                          <div className="flex items-center justify-center lg:justify-start gap-6">
+                        <div className="flex flex-col lg:flex-row lg:items-center gap-6 pt-4 border-t border-gray-50 dark:border-gray-700/50 animate-in fade-in slide-in-from-top-2 duration-300">
+                          <div className="hidden lg:block flex-1" />
+                          <div className="flex items-center justify-center gap-6 flex-1">
                             {!isRangeMode ? (
                               <div className="flex items-center gap-6">
                                 <button 
@@ -650,7 +651,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                                 </button>
                               </div>
                             ) : (
-                              <div className="flex flex-col items-center lg:items-start">
+                              <div className="flex flex-col items-center lg:items-center">
                                 <p className="text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-[0.2em] mb-1">Rentang Terpilih</p>
                                 <p className="text-lg font-black text-gray-800 dark:text-gray-100 tracking-tight">
                                   {format(safeParseDate(startDateRange), 'd MMM', { locale: id })} — {format(safeParseDate(endDateRange), 'd MMM yyyy', { locale: id })}
@@ -659,7 +660,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                             )}
                           </div>
 
-                          <div className="flex items-center gap-3 w-full lg:w-auto">
+                          <div className="flex items-center justify-center lg:justify-end gap-3 w-full flex-1">
                             {isRangeMode ? (
                               <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-2xl border border-gray-100 dark:border-gray-700 w-full lg:w-auto shadow-inner">
                                 <div className="flex-1 relative">

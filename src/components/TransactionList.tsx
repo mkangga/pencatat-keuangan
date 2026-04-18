@@ -1,5 +1,5 @@
 import { Transaction } from '../types';
-import { PlusCircle, MinusCircle, Trash2, Edit2 } from 'lucide-react';
+import { PlusCircle, MinusCircle, Trash2, Edit2, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -75,7 +75,8 @@ export default function TransactionList({ transactions, type, onEdit, onViewDeta
     <div className="space-y-1">
       {transactions.map((tx) => {
         const txIsIncome = tx.type === 'income';
-        const TxIcon = txIsIncome ? PlusCircle : MinusCircle;
+        const isTransfer = tx.category === 'Pindah Saldo' || tx.category === 'Transfer';
+        const TxIcon = isTransfer ? RefreshCw : (txIsIncome ? PlusCircle : MinusCircle);
         return (
           <div 
             key={tx.id} 
@@ -84,9 +85,11 @@ export default function TransactionList({ transactions, type, onEdit, onViewDeta
           >
             <div className="flex items-center gap-4 min-w-0 flex-1">
               <div className={`w-10 h-10 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-sm ${
-                txIsIncome ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
+                isTransfer 
+                  ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' 
+                  : (txIsIncome ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400')
               }`}>
-                <TxIcon size={18} strokeWidth={2.5} />
+                <TxIcon size={isTransfer ? 16 : 18} strokeWidth={2.5} />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-bold text-gray-800 dark:text-gray-100 text-sm break-words">{tx.description}</p>
