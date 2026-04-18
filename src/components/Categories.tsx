@@ -2,11 +2,12 @@ import { useState, useEffect, FormEvent } from 'react';
 import { User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { Category, CategoryGroup } from '../types';
+import { Category, CategoryGroup, Transaction } from '../types';
 import { Tags, Trash2, Edit2, X } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
+import GroupedTransactionList from './GroupedTransactionList';
 
-export default function Categories({ user }: { user: User }) {
+export default function Categories({ user, transactions = [] }: { user: User, transactions?: Transaction[] }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [name, setName] = useState('');
@@ -16,6 +17,7 @@ export default function Categories({ user }: { user: User }) {
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [selectedCategoryForTransactions, setSelectedCategoryForTransactions] = useState<Category | null>(null);
   const [editName, setEditName] = useState('');
   const [editType, setEditType] = useState<'income' | 'expense'>('expense');
   const [editGroupId, setEditGroupId] = useState('');
@@ -306,7 +308,11 @@ export default function Categories({ user }: { user: User }) {
           </h3>
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors duration-300">
             {expenseCategories.map(cat => (
-              <div key={cat.id} className="flex items-center justify-between p-4 border-b border-gray-50 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+              <div 
+                key={cat.id} 
+                onClick={() => setSelectedCategoryForTransactions(cat)}
+                className="flex items-center justify-between p-4 border-b border-gray-50 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group cursor-pointer"
+              >
                 <div>
                   <span className="font-medium text-gray-700 dark:text-gray-300 block">{cat.name}</span>
                   {cat.groupId && (
@@ -316,11 +322,11 @@ export default function Categories({ user }: { user: User }) {
                   )}
                 </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => startEdit(cat)} className="text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
-                    <Edit2 size={18} />
+                  <button onClick={(e) => { e.stopPropagation(); startEdit(cat); }} className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors bg-white dark:bg-gray-800 rounded-lg">
+                    <Edit2 size={16} />
                   </button>
-                  <button onClick={() => setDeleteId(cat.id)} className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-                    <Trash2 size={18} />
+                  <button onClick={(e) => { e.stopPropagation(); setDeleteId(cat.id); }} className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors bg-white dark:bg-gray-800 rounded-lg">
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
@@ -337,14 +343,18 @@ export default function Categories({ user }: { user: User }) {
           </h3>
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors duration-300">
             {incomeCategories.map(cat => (
-              <div key={cat.id} className="flex items-center justify-between p-4 border-b border-gray-50 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+              <div 
+                key={cat.id} 
+                onClick={() => setSelectedCategoryForTransactions(cat)}
+                className="flex items-center justify-between p-4 border-b border-gray-50 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group cursor-pointer"
+              >
                 <span className="font-medium text-gray-700 dark:text-gray-300">{cat.name}</span>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => startEdit(cat)} className="text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
-                    <Edit2 size={18} />
+                  <button onClick={(e) => { e.stopPropagation(); startEdit(cat); }} className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors bg-white dark:bg-gray-800 rounded-lg">
+                    <Edit2 size={16} />
                   </button>
-                  <button onClick={() => setDeleteId(cat.id)} className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-                    <Trash2 size={18} />
+                  <button onClick={(e) => { e.stopPropagation(); setDeleteId(cat.id); }} className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors bg-white dark:bg-gray-800 rounded-lg">
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
@@ -431,6 +441,46 @@ export default function Categories({ user }: { user: User }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Selected Category Transactions Modal */}
+      {selectedCategoryForTransactions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-gray-50 dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-6 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{selectedCategoryForTransactions.name}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Semua transaksi untuk kategori {selectedCategoryForTransactions.type === 'expense' ? 'pengeluaran' : 'pemasukan'} ini
+                </p>
+              </div>
+              <button 
+                onClick={() => setSelectedCategoryForTransactions(null)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-400 transition-colors"
+                title="Tutup"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {(() => {
+                const categoryTxs = transactions.filter(t => 
+                  t.type === selectedCategoryForTransactions.type && 
+                  t.category === selectedCategoryForTransactions.name
+                );
+
+                return (
+                  <GroupedTransactionList 
+                    transactions={categoryTxs} 
+                    onViewDetail={() => {}} 
+                    emptyMessage={`Belum ada transaksi untuk kategori ${selectedCategoryForTransactions.name}.`}
+                    type={selectedCategoryForTransactions.type}
+                  />
+                );
+              })()}
+            </div>
           </div>
         </div>
       )}

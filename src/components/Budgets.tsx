@@ -3,10 +3,11 @@ import { User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Transaction, Category, Budget } from '../types';
-import { Target, Plus, Edit2, Trash2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Target, Plus, Edit2, Trash2, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, addMonths, subMonths } from 'date-fns';
 import { id } from 'date-fns/locale';
 import ConfirmModal from './ConfirmModal';
+import GroupedTransactionList from './GroupedTransactionList';
 
 interface BudgetsProps {
   user: User;
@@ -26,6 +27,8 @@ export default function Budgets({ user, categories, transactions }: BudgetsProps
   const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [selectedBudgetForTransactions, setSelectedBudgetForTransactions] = useState<string | null>(null);
 
   const currentMonthStr = format(currentDate, 'yyyy-MM');
   const expenseCategories = categories.filter(c => c.type === 'expense');
@@ -266,17 +269,27 @@ export default function Budgets({ user, categories, transactions }: BudgetsProps
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {budgetRealizations.map(budget => (
-            <div key={budget.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition-colors duration-300 flex flex-col">
+            <div 
+              key={budget.id} 
+              onClick={() => setSelectedBudgetForTransactions(budget.categoryName)}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition-all duration-300 flex flex-col cursor-pointer hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-800"
+            >
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">{budget.categoryName}</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Budget: {formatCurrency(budget.amount)}</p>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={() => openEditModal(budget)} className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); openEditModal(budget); }} 
+                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                  >
                     <Edit2 size={16} />
                   </button>
-                  <button onClick={() => setDeleteId(budget.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setDeleteId(budget.id); }} 
+                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                  >
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -384,6 +397,49 @@ export default function Budgets({ user, categories, transactions }: BudgetsProps
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {selectedBudgetForTransactions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-gray-50 dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-6 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{selectedBudgetForTransactions}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Transaksi Pengeluaran - {format(currentDate, 'MMMM yyyy', { locale: id })}
+                </p>
+              </div>
+              <button 
+                onClick={() => setSelectedBudgetForTransactions(null)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-400 transition-colors"
+                title="Tutup"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {(() => {
+                const start = startOfMonth(currentDate);
+                const end = endOfMonth(currentDate);
+                const categoryTxs = transactions.filter(t => {
+                  if (t.type !== 'expense' || t.category !== selectedBudgetForTransactions) return false;
+                  const tDate = parseISO(t.date);
+                  return isWithinInterval(tDate, { start, end });
+                });
+
+                return (
+                  <GroupedTransactionList 
+                    transactions={categoryTxs} 
+                    onViewDetail={() => {}} // Could wire this up to open transaction detail if needed
+                    emptyMessage={`Belum ada pengeluaran untuk kategori ${selectedBudgetForTransactions} di bulan ini.`}
+                    type="expense"
+                  />
+                );
+              })()}
+            </div>
           </div>
         </div>
       )}

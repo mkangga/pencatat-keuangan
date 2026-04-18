@@ -836,7 +836,7 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
             <Route path="/aset-investasi" element={<Assets user={user} wallets={wallets} />} />
             <Route path="/alokasi-budget" element={<Budgets user={user} categories={categories} transactions={transactions} />} />
             <Route path="/dompet-rekening" element={<Wallets user={user} />} />
-            <Route path="/kategori-transaksi" element={<Categories user={user} />} />
+            <Route path="/kategori-transaksi" element={<Categories user={user} transactions={transactions} />} />
             <Route path="/pengaturan" element={<Settings user={user} appUser={appUser} />} />
             <Route path="/profil" element={
               <div className="max-w-7xl mx-auto space-y-8">
