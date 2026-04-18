@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent, useMemo } from 'react';
 import { User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, setDoc, writeBatch } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Wallet as WalletType, Transaction } from '../types';
 import { Wallet, Trash2, RefreshCw, X } from 'lucide-react';
@@ -111,10 +111,11 @@ export default function Wallets({ user }: { user: User }) {
     const numericBalance = Number(parseNominal(initialBalance));
     setLoading(true);
     try {
+      const batch = writeBatch(db);
       const walletRef = doc(collection(db, 'wallets'));
       const actualInitialBalance = recordAsTransaction ? 0 : numericBalance;
 
-      await setDoc(walletRef, {
+      batch.set(walletRef, {
         userId: user.uid,
         name: name.trim(),
         initialBalance: actualInitialBalance,
@@ -122,7 +123,8 @@ export default function Wallets({ user }: { user: User }) {
       });
 
       if (recordAsTransaction && numericBalance > 0) {
-        await addDoc(collection(db, 'transactions'), {
+        const txRef = doc(collection(db, 'transactions'));
+        batch.set(txRef, {
           userId: user.uid,
           type: 'income',
           amount: numericBalance,
@@ -133,6 +135,8 @@ export default function Wallets({ user }: { user: User }) {
           createdAt: serverTimestamp()
         });
       }
+
+      batch.commit().catch(error => handleFirestoreError(error, OperationType.WRITE, 'wallets'));
 
       setName('');
       setInitialBalance('0');
@@ -202,8 +206,11 @@ export default function Wallets({ user }: { user: User }) {
       const fromWallet = wallets.find(w => w.id === fromWalletId);
       const toWallet = wallets.find(w => w.id === toWalletId);
 
+      const batch = writeBatch(db);
+
       // Record expense in source wallet
-      await addDoc(collection(db, 'transactions'), {
+      const expenseRef = doc(collection(db, 'transactions'));
+      batch.set(expenseRef, {
         userId: user.uid,
         type: 'expense',
         amount: numericAmount,
@@ -215,7 +222,8 @@ export default function Wallets({ user }: { user: User }) {
       });
 
       // Record income in destination wallet
-      await addDoc(collection(db, 'transactions'), {
+      const incomeRef = doc(collection(db, 'transactions'));
+      batch.set(incomeRef, {
         userId: user.uid,
         type: 'income',
         amount: numericAmount,
@@ -225,6 +233,8 @@ export default function Wallets({ user }: { user: User }) {
         date: new Date().toISOString(),
         createdAt: serverTimestamp()
       });
+
+      batch.commit().catch(error => handleFirestoreError(error, OperationType.WRITE, 'transactions'));
 
       setIsTransferModalOpen(false);
       setTransferAmount('');

@@ -109,7 +109,11 @@ export default function TransactionList({ transactions, type, onEdit, onViewDeta
               </div>
             </div>
             <div className="flex flex-col items-end gap-2 ml-3 flex-shrink-0 max-w-[45%]">
-              <div className={`font-bold text-sm sm:text-base whitespace-nowrap ${txIsIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+              <div className={`font-bold text-sm sm:text-base whitespace-nowrap ${
+                isTransfer 
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : (txIsIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')
+              }`}>
                 {txIsIncome ? '+' : '-'} {formatCurrency(tx.amount)}
               </div>
               <div className="flex items-center gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
