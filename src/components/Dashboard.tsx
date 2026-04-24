@@ -28,6 +28,7 @@ import { isToday, isSameMonth, parseISO, isSameDay, format, addDays, subDays, is
 import { id } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'motion/react';
 import { checkAndNotify } from '../services/notificationService';
+import CustomSelect from './CustomSelect';
 
 interface DashboardProps {
   user: User;
@@ -434,17 +435,16 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100" />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Kategori</label>
-          <select 
-            value={filterCategory} 
-            onChange={e => setFilterCategory(e.target.value)} 
-            className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100"
-          >
-            <option value="">Semua kategori...</option>
-            {uniqueCategoryNames.map(name => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
+          <CustomSelect
+            label="Kategori"
+            value={filterCategory}
+            onChange={(val) => setFilterCategory(val)}
+            options={[
+              { value: '', label: 'Semua kategori...' },
+              ...uniqueCategoryNames.map(name => ({ value: name, label: name }))
+            ]}
+            placeholder="Pilih Kategori"
+          />
         </div>
         <div className="flex items-end">
           <button onClick={() => { setStartDate(''); setEndDate(''); setFilterCategory(''); }} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">Reset Filter</button>
@@ -622,9 +622,8 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                     {/* Date Selector Row */}
                     {isFilterExpanded && (
                       <>
-                        <div className="flex flex-col lg:flex-row lg:items-center gap-6 pt-4 border-t border-gray-50 dark:border-gray-700/50 animate-in fade-in slide-in-from-top-2 duration-300">
-                          <div className="hidden lg:block flex-1" />
-                          <div className="flex items-center justify-center gap-6 flex-1">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-center gap-6 pt-4 border-t border-gray-50 dark:border-gray-700/50 animate-in fade-in slide-in-from-top-2 duration-300">
+                          <div className="flex items-center justify-center gap-6">
                             {!isRangeMode ? (
                               <div className="flex items-center gap-6">
                                 <button 
@@ -722,17 +721,16 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
                           </div>
 
                           <div className="flex-1 w-full">
-                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 ml-1">Kategori</p>
-                            <select 
-                              value={filterCategory} 
-                              onChange={(e) => setFilterCategory(e.target.value)}
-                              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-gray-800 dark:text-gray-100 transition-all shadow-inner"
-                            >
-                              <option value="">Semua Kategori</option>
-                              {filteredCategoryNames.map(name => (
-                                <option key={name} value={name}>{name}</option>
-                              ))}
-                            </select>
+                            <CustomSelect
+                              label="Kategori"
+                              value={filterCategory}
+                              onChange={(val) => setFilterCategory(val)}
+                              options={[
+                                { value: '', label: 'Semua Kategori' },
+                                ...filteredCategoryNames.map(name => ({ value: name, label: name }))
+                              ]}
+                              placeholder="Pilih Kategori"
+                            />
                           </div>
                         </div>
                       </>

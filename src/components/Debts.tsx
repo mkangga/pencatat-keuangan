@@ -5,6 +5,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Debt, Wallet } from '../types';
 import { Trash2, Calendar as CalendarIcon, CheckCircle2, XCircle, ArrowUpRight, ArrowDownRight, AlertCircle, RotateCcw } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
+import CustomSelect from './CustomSelect';
 import { format, isPast, isToday, parseISO, startOfDay } from 'date-fns';
 import { id } from 'date-fns/locale';
 
@@ -261,11 +262,16 @@ export default function Debts({ user, wallets }: DebtsProps) {
         <form onSubmit={handleAdd} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Jenis</label>
-              <select value={type} onChange={e => setType(e.target.value as any)} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300">
-                <option value="payable">Utang (Saya meminjam)</option>
-                <option value="receivable">Piutang (Orang meminjam)</option>
-              </select>
+              <CustomSelect
+                label="Jenis"
+                value={type}
+                onChange={(val) => setType(val as 'payable' | 'receivable')}
+                options={[
+                  { value: 'payable', label: 'Utang (Saya meminjam)' },
+                  { value: 'receivable', label: 'Piutang (Orang meminjam)' }
+                ]}
+                placeholder="Pilih Jenis"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Jumlah Dipinjam (Rp)</label>
@@ -304,17 +310,14 @@ export default function Debts({ user, wallets }: DebtsProps) {
               
               {recordTransaction && (
                 <div className="pl-7 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <select 
-                    value={selectedWalletId} 
-                    onChange={e => setSelectedWalletId(e.target.value)} 
-                    className="px-3 py-1.5 text-sm bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300"
-                    required={recordTransaction}
-                  >
-                    <option value="" disabled>Pilih Dompet</option>
-                    {wallets.map(w => (
-                      <option key={w.id} value={w.id}>{w.name}</option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    label=""
+                    value={selectedWalletId}
+                    onChange={(val) => setSelectedWalletId(val)}
+                    options={wallets.map(w => ({ value: w.id, label: w.name }))}
+                    placeholder="Pilih Dompet"
+                    required
+                  />
                   <p className="text-xs text-gray-500 mt-1">
                     {type === 'payable' 
                       ? 'Saldo dompet akan bertambah (Pemasukan)' 
@@ -471,18 +474,14 @@ export default function Debts({ user, wallets }: DebtsProps) {
 
                 {payRecordTransaction && (
                   <div className="pl-8 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Pilih Dompet</label>
-                    <select 
-                      value={payWalletId} 
-                      onChange={e => setPayWalletId(e.target.value)} 
-                      className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300"
-                      required={payRecordTransaction}
-                    >
-                      <option value="" disabled>Pilih Dompet</option>
-                      {wallets.map(w => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
-                      ))}
-                    </select>
+                    <CustomSelect
+                      label="Pilih Dompet"
+                      value={payWalletId}
+                      onChange={(val) => setPayWalletId(val)}
+                      options={wallets.map(w => ({ value: w.id, label: w.name }))}
+                      placeholder="Pilih Dompet"
+                      required
+                    />
                   </div>
                 )}
               </div>

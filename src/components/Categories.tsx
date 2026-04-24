@@ -6,6 +6,7 @@ import { Category, CategoryGroup, Transaction } from '../types';
 import { Tags, Trash2, Edit2, X } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 import GroupedTransactionList from './GroupedTransactionList';
+import CustomSelect from './CustomSelect';
 
 export default function Categories({ user, transactions = [] }: { user: User, transactions?: Transaction[] }) {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -263,15 +264,16 @@ export default function Categories({ user, transactions = [] }: { user: User, tr
         </h2>
         <form onSubmit={handleAdd} className="flex gap-4 flex-wrap items-end">
           <div className="flex-1 min-w-[150px]">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Jenis</label>
-            <select 
-              value={type} 
-              onChange={e => setType(e.target.value as any)} 
-              className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100"
-            >
-              <option value="expense">Pengeluaran</option>
-              <option value="income">Pemasukan</option>
-            </select>
+            <CustomSelect
+              label="Jenis"
+              value={type}
+              onChange={(val) => setType(val as 'income' | 'expense')}
+              options={[
+                { value: 'expense', label: 'Pengeluaran' },
+                { value: 'income', label: 'Pemasukan' }
+              ]}
+              placeholder="Pilih Jenis"
+            />
           </div>
           <div className="flex-[2] min-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Nama Kategori</label>
@@ -279,18 +281,14 @@ export default function Categories({ user, transactions = [] }: { user: User, tr
           </div>
           {type === 'expense' && (
             <div className="flex-1 min-w-[150px]">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Kelompok</label>
-              <select 
-                value={groupId} 
-                onChange={e => setGroupId(e.target.value)} 
+              <CustomSelect
+                label="Kelompok"
+                value={groupId}
+                onChange={(val) => setGroupId(val)}
+                options={categoryGroups.filter(g => g.type !== 'savings').map(g => ({ value: g.id, label: g.name }))}
+                placeholder="Pilih Kelompok"
                 required
-                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100"
-              >
-                <option value="" disabled>Pilih Kelompok</option>
-                {categoryGroups.filter(g => g.type !== 'savings').map(g => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
+              />
             </div>
           )}
           <div className="flex gap-2">
@@ -386,15 +384,17 @@ export default function Categories({ user, transactions = [] }: { user: User, tr
             </div>
             <form onSubmit={handleEdit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Jenis</label>
-                <select 
-                  value={editType} 
+                <CustomSelect
+                  label="Jenis"
+                  value={editType}
+                  onChange={() => {}}
+                  options={[
+                    { value: 'expense', label: 'Pengeluaran' },
+                    { value: 'income', label: 'Pemasukan' }
+                  ]}
+                  placeholder="Pilih Jenis"
                   disabled
-                  className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl outline-none text-gray-500 dark:text-gray-400 opacity-70"
-                >
-                  <option value="expense">Pengeluaran</option>
-                  <option value="income">Pemasukan</option>
-                </select>
+                />
                 <p className="text-xs text-gray-500 mt-1">Jenis kategori tidak dapat diubah.</p>
               </div>
               <div>
@@ -410,18 +410,14 @@ export default function Categories({ user, transactions = [] }: { user: User, tr
               </div>
               {editType === 'expense' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Kelompok</label>
-                  <select 
-                    value={editGroupId} 
-                    onChange={e => setEditGroupId(e.target.value)} 
+                  <CustomSelect
+                    label="Kelompok"
+                    value={editGroupId}
+                    onChange={(val) => setEditGroupId(val)}
+                    options={categoryGroups.filter(g => g.type !== 'savings').map(g => ({ value: g.id, label: g.name }))}
+                    placeholder="Pilih Kelompok"
                     required
-                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100"
-                  >
-                    <option value="" disabled>Pilih Kelompok</option>
-                    {categoryGroups.filter(g => g.type !== 'savings').map(g => (
-                      <option key={g.id} value={g.id}>{g.name}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
               )}
               <div className="pt-4 flex gap-3">

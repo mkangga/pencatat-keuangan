@@ -4,6 +4,7 @@ import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDo
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Wallet as WalletIcon, Trash2, Edit2, X } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
+import CustomSelect from './CustomSelect';
 import { Goal, Wallet as WalletType } from '../types';
 
 export default function Goals({ user }: { user: User }) {
@@ -301,13 +302,13 @@ export default function Goals({ user }: { user: User }) {
             <input type="text" inputMode="numeric" value={initialAmount} onChange={handleInitialAmountChange} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300" placeholder="0" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Simpan di Dompet <span className="text-gray-400 dark:text-gray-500 text-xs font-normal">(Opsional)</span></label>
-            <select value={initialWalletId} onChange={e => setInitialWalletId(e.target.value)} className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300">
-              <option value="">Pilih Dompet...</option>
-              {wallets.map(w => (
-                <option key={w.id} value={w.id}>{w.name}</option>
-              ))}
-            </select>
+            <CustomSelect
+              label="Simpan di Dompet (Opsional)"
+              value={initialWalletId}
+              onChange={(val) => setInitialWalletId(val)}
+              options={wallets.map(w => ({ value: w.id, label: w.name }))}
+              placeholder="Pilih Dompet..."
+            />
           </div>
           <div className="lg:col-span-3 flex gap-2 justify-end mt-2">
             <button type="submit" disabled={loading} className="bg-blue-500 text-white px-8 py-2 rounded-xl h-[42px] hover:bg-blue-600 font-medium transition-colors disabled:opacity-70">
@@ -367,17 +368,14 @@ export default function Goals({ user }: { user: User }) {
                         onChange={handleProgressChange}
                         className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-900/40 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 dark:text-gray-100 transition-colors duration-300"
                       />
-                      <select 
-                        value={progressWalletId} 
+                      <CustomSelect
+                        label=""
+                        value={progressWalletId}
+                        onChange={(val) => setProgressWalletId(val)}
+                        options={wallets.map(w => ({ value: w.id, label: w.name }))}
+                        placeholder="Pilih Dompet..."
                         required
-                        onChange={e => setProgressWalletId(e.target.value)}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-900/40 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm text-gray-800 dark:text-gray-100 transition-colors duration-300"
-                      >
-                        <option value="" disabled>Pilih Dompet...</option>
-                        {wallets.map(w => (
-                          <option key={w.id} value={w.id}>{w.name}</option>
-                        ))}
-                      </select>
+                      />
                     </div>
                     <p className="text-[10px] text-gray-500 dark:text-gray-400">* Saldo dompet akan bertambah sebagai pemasukan.</p>
                     <div className="flex gap-2">
@@ -508,18 +506,14 @@ export default function Goals({ user }: { user: User }) {
               {/* Wallet selection if current amount changes */}
               {Number(parseNominal(editCurrent)) !== editingGoal.currentAmount && (
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-2xl animate-in slide-in-from-top-2 duration-200">
-                  <label className="block text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2">Pilih Dompet untuk Penyesuaian</label>
-                  <select 
-                    value={editWalletId} 
-                    onChange={e => setEditWalletId(e.target.value)} 
-                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm text-gray-800 dark:text-gray-100"
+                  <CustomSelect
+                    label="Pilih Dompet untuk Penyesuaian"
+                    value={editWalletId}
+                    onChange={(val) => setEditWalletId(val)}
+                    options={wallets.map(w => ({ value: w.id, label: w.name }))}
+                    placeholder="Pilih Dompet..."
                     required
-                  >
-                    <option value="">Pilih Dompet...</option>
-                    {wallets.map(w => (
-                      <option key={w.id} value={w.id}>{w.name}</option>
-                    ))}
-                  </select>
+                  />
                   <p className="text-[10px] text-blue-500 mt-2">
                     * Perubahan saldo akan dicatat sebagai {Number(parseNominal(editCurrent)) > editingGoal.currentAmount ? 'Pemasukan' : 'Pengeluaran'}.
                   </p>
@@ -537,15 +531,16 @@ export default function Goals({ user }: { user: User }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Status</label>
-                  <select 
-                    value={editStatus} 
-                    onChange={e => setEditStatus(e.target.value as 'active' | 'completed')} 
-                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 dark:text-gray-100"
-                  >
-                    <option value="active">Aktif</option>
-                    <option value="completed">Selesai</option>
-                  </select>
+                  <CustomSelect
+                    label="Status"
+                    value={editStatus}
+                    onChange={(val) => setEditStatus(val as 'active' | 'completed')}
+                    options={[
+                      { value: 'active', label: 'Aktif' },
+                      { value: 'completed', label: 'Selesai' }
+                    ]}
+                    placeholder="Pilih Status"
+                  />
                 </div>
               </div>
               <div className="flex gap-3 pt-4">

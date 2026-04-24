@@ -4,6 +4,7 @@ import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'da
 import { id } from 'date-fns/locale';
 import { ChevronRight, Search, Filter, PlusCircle, MinusCircle, Calendar, X } from 'lucide-react';
 import GroupedTransactionList from './GroupedTransactionList';
+import CustomSelect from './CustomSelect';
 
 const safeParseDate = (dateStr: string) => {
   try {
@@ -121,41 +122,49 @@ export default function Riwayat({ transactions, onViewDetail, onEdit }: RiwayatP
               )}
             </div>
             
-            <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
-              <select 
-                value={filterType}
-                onChange={(e) => {
-                  setFilterType(e.target.value as any);
-                  setFilterCategory('');
-                }}
-                className="px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 rounded-xl text-xs font-bold outline-none text-gray-700 dark:text-gray-300 min-w-[100px]"
-              >
-                <option value="all">Semua Tipe</option>
-                <option value="income">Pemasukan</option>
-                <option value="expense">Pengeluaran</option>
-              </select>
+            <div className="flex gap-3 flex-wrap items-end">
+              <div className="flex-1 min-w-[140px]">
+                <CustomSelect 
+                  label="Tipe"
+                  value={filterType}
+                  onChange={(val) => {
+                    setFilterType(val as any);
+                    setFilterCategory('');
+                  }}
+                  options={[
+                    { value: 'all', label: 'Semua Tipe' },
+                    { value: 'income', label: 'Pemasukan' },
+                    { value: 'expense', label: 'Pengeluaran' }
+                  ]}
+                  placeholder="Pilih Tipe"
+                />
+              </div>
 
-              <select 
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 rounded-xl text-xs font-bold outline-none text-gray-700 dark:text-gray-300 min-w-[120px]"
-              >
-                <option value="">Semua Kategori</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+              <div className="flex-1 min-w-[160px]">
+                <CustomSelect 
+                  label="Kategori"
+                  value={filterCategory}
+                  onChange={(val) => setFilterCategory(val)}
+                  options={[
+                    { value: '', label: 'Semua Kategori' },
+                    ...categories.map(cat => ({ value: cat, label: cat }))
+                  ]}
+                  placeholder="Pilih Kategori"
+                />
+              </div>
 
-              <select 
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 rounded-xl text-xs font-bold outline-none text-gray-700 dark:text-gray-300 min-w-[120px]"
-              >
-                <option value="all">Semua Waktu</option>
-                {availableMonths.map(month => (
-                  <option key={month.value} value={month.value}>{month.label}</option>
-                ))}
-              </select>
+              <div className="flex-1 min-w-[160px]">
+                <CustomSelect 
+                  label="Waktu"
+                  value={dateFilter}
+                  onChange={(val) => setDateFilter(val)}
+                  options={[
+                    { value: 'all', label: 'Semua Waktu' },
+                    ...availableMonths.map(month => ({ value: month.value, label: month.label }))
+                  ]}
+                  placeholder="Pilih Waktu"
+                />
+              </div>
             </div>
           </div>
 

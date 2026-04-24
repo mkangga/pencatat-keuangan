@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent, ChangeEvent, useMemo } from 'react';
 import { User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
+import CustomSelect from './CustomSelect';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -590,26 +591,21 @@ export default function Assets({ user, wallets }: { user: User, wallets: WalletT
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2">Jenis Aset</label>
-                    <div className="relative group">
-                      <input 
-                        type="text" 
-                        list="asset-types"
-                        value={type} 
-                        onChange={e => setType(e.target.value)}
-                        className="w-full px-5 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 transition-all pr-12"
-                        placeholder="Pilih atau ketik jenis aset..."
-                        required
-                      />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-emerald-500 transition-colors">
-                        <ChevronDown size={20} />
-                      </div>
-                    </div>
-                    <datalist id="asset-types">
-                      {suggestedTypes.map(t => (
-                        <option key={t} value={t} />
-                      ))}
-                    </datalist>
+                    <CustomSelect
+                      label="Jenis Aset"
+                      value={type}
+                      onChange={(val) => setType(val)}
+                      options={[
+                        { value: 'Saham', label: 'Saham' },
+                        { value: 'Crypto', label: 'Crypto' },
+                        { value: 'Emas', label: 'Emas' },
+                        { value: 'Reksadana', label: 'Reksadana' },
+                        { value: 'Properti', label: 'Properti' },
+                        { value: 'Lainnya', label: 'Lainnya' }
+                      ]}
+                      placeholder="Pilih atau ketik jenis aset..."
+                      required
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2">Modal Awal (Rp)</label>
@@ -637,18 +633,14 @@ export default function Assets({ user, wallets }: { user: User, wallets: WalletT
                   </label>
                   {recordTransaction && (
                     <div className="mt-4 animate-in slide-in-from-top-2 duration-200">
-                      <label className="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">Pilih Sumber Dana</label>
-                      <select 
-                        value={walletId} 
-                        onChange={e => setWalletId(e.target.value)}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-emerald-200 dark:border-emerald-800 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-gray-800 dark:text-gray-100"
+                      <CustomSelect
+                        label="Pilih Sumber Dana"
+                        value={walletId}
+                        onChange={(val) => setWalletId(val)}
+                        options={wallets.map(w => ({ value: w.id, label: w.name }))}
+                        placeholder="Pilih Dompet..."
                         required
-                      >
-                        <option value="">Pilih Dompet...</option>
-                        {wallets.map(w => (
-                          <option key={w.id} value={w.id}>{w.name}</option>
-                        ))}
-                      </select>
+                      />
                     </div>
                   )}
                 </div>
@@ -921,18 +913,14 @@ export default function Assets({ user, wallets }: { user: User, wallets: WalletT
                     </label>
                     {recordTransaction && (
                       <div className="mt-4 animate-in slide-in-from-top-2 duration-200">
-                        <label className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">Pilih Sumber Dana</label>
-                        <select 
-                          value={walletId} 
-                          onChange={e => setWalletId(e.target.value)}
-                          className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm text-gray-800 dark:text-gray-100"
+                        <CustomSelect
+                          label="Pilih Sumber Dana"
+                          value={walletId}
+                          onChange={(val) => setWalletId(val)}
+                          options={wallets.map(w => ({ value: w.id, label: w.name }))}
+                          placeholder="Pilih Dompet..."
                           required
-                        >
-                          <option value="">Pilih Dompet...</option>
-                          {wallets.map(w => (
-                            <option key={w.id} value={w.id}>{w.name}</option>
-                          ))}
-                        </select>
+                        />
                       </div>
                     )}
                   </div>
@@ -1011,18 +999,14 @@ export default function Assets({ user, wallets }: { user: User, wallets: WalletT
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2">Dompet Tujuan</label>
-                    <select 
-                      value={walletId} 
-                      onChange={e => setWalletId(e.target.value)}
-                      className="w-full px-5 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 transition-all"
+                    <CustomSelect
+                      label="Dompet Tujuan"
+                      value={walletId}
+                      onChange={(val) => setWalletId(val)}
+                      options={wallets.map(w => ({ value: w.id, label: w.name }))}
+                      placeholder="Pilih Dompet..."
                       required
-                    >
-                      <option value="">Pilih Dompet...</option>
-                      {wallets.map(w => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 </div>
 

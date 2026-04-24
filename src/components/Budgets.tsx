@@ -8,6 +8,7 @@ import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, addMonths
 import { id } from 'date-fns/locale';
 import ConfirmModal from './ConfirmModal';
 import GroupedTransactionList from './GroupedTransactionList';
+import CustomSelect from './CustomSelect';
 
 interface BudgetsProps {
   user: User;
@@ -351,17 +352,14 @@ export default function Budgets({ user, categories, transactions }: BudgetsProps
                     <p>Anda belum memiliki kategori pengeluaran. Silakan buat kategori terlebih dahulu di menu Kategori Transaksi.</p>
                   </div>
                 ) : (
-                  <select
+                  <CustomSelect
+                    label=""
                     value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800 dark:text-gray-100 transition-colors"
+                    onChange={(val) => setCategoryId(val)}
+                    options={expenseCategories.map(cat => ({ value: cat.id, label: cat.name }))}
+                    placeholder="Pilih Kategori"
                     required
-                  >
-                    <option value="">Pilih Kategori</option>
-                    {expenseCategories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
+                  />
                 )}
               </div>
               

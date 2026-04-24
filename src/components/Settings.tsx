@@ -5,6 +5,7 @@ import { db } from '../firebase';
 import { NOTIFICATION_KEY, requestNotificationPermission } from '../services/notificationService';
 import { AppUser } from '../types';
 import { ALL_NAV_ITEMS } from './BottomNav';
+import CustomSelect from './CustomSelect';
 
 export default function Settings({ user, appUser }: { user: User, appUser: AppUser | null }) {
   const [deleteState, setDeleteState] = useState<'idle' | 'counting' | 'ready' | 'deleting'>('idle');
@@ -114,10 +115,19 @@ export default function Settings({ user, appUser }: { user: User, appUser: AppUs
                 <p className="font-medium text-gray-800 dark:text-gray-100">Mata Uang</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Pilih mata uang default</p>
               </div>
-              <select className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg font-medium text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors duration-300">
-                <option>IDR (Rupiah)</option>
-                <option>USD (Dollar)</option>
-              </select>
+              <div className="min-w-[150px]">
+                <CustomSelect
+                  label=""
+                  value="IDR (Rupiah)"
+                  onChange={() => {}}
+                  options={[
+                    { value: 'IDR (Rupiah)', label: 'IDR (Rupiah)' },
+                    { value: 'USD (Dollar)', label: 'USD (Dollar)' }
+                  ]}
+                  placeholder="Pilih Mata Uang"
+                  disabled
+                />
+              </div>
             </div>
 
             {/* Notification Toggle */}

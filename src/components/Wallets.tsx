@@ -8,6 +8,7 @@ import ConfirmModal from './ConfirmModal';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import CustomSelect from './CustomSelect';
 
 export default function Wallets({ user }: { user: User }) {
   const [wallets, setWallets] = useState<WalletType[]>([]);
@@ -518,32 +519,24 @@ export default function Wallets({ user }: { user: User }) {
                 <form onSubmit={handleTransfer} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1.5">Dari</label>
-                      <select 
-                        value={fromWalletId} 
-                        onChange={e => setFromWalletId(e.target.value)}
-                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium text-gray-800 dark:text-gray-100"
+                      <CustomSelect
+                        label="Dari"
+                        value={fromWalletId}
+                        onChange={(val) => setFromWalletId(val)}
+                        options={wallets.map(w => ({ value: w.id, label: w.name }))}
+                        placeholder="Pilih Dompet"
                         required
-                      >
-                        <option value="">Pilih Dompet</option>
-                        {wallets.map(w => (
-                          <option key={w.id} value={w.id}>{w.name}</option>
-                        ))}
-                      </select>
+                      />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1.5">Ke</label>
-                      <select 
-                        value={toWalletId} 
-                        onChange={e => setToWalletId(e.target.value)}
-                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium text-gray-800 dark:text-gray-100"
+                      <CustomSelect
+                        label="Ke"
+                        value={toWalletId}
+                        onChange={(val) => setToWalletId(val)}
+                        options={wallets.map(w => ({ value: w.id, label: w.name, disabled: w.id === fromWalletId }))}
+                        placeholder="Pilih Dompet"
                         required
-                      >
-                        <option value="">Pilih Dompet</option>
-                        {wallets.map(w => (
-                          <option key={w.id} value={w.id} disabled={w.id === fromWalletId}>{w.name}</option>
-                        ))}
-                      </select>
+                      />
                     </div>
                   </div>
 

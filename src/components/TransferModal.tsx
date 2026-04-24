@@ -5,6 +5,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { X, ArrowRightLeft, AlertCircle } from 'lucide-react';
 import { Wallet } from '../types';
 import { useNavigate } from 'react-router-dom';
+import CustomSelect from './CustomSelect';
 
 interface TransferModalProps {
   isOpen: boolean;
@@ -176,17 +177,13 @@ export default function TransferModal({
 
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Dari Dompet</label>
-              <select
+              <CustomSelect
+                label="Dari Dompet"
                 value={fromWalletId}
                 required
-                onChange={(e) => setFromWalletId(e.target.value)}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-800 dark:text-gray-100"
-              >
-                {wallets.map(w => (
-                  <option key={w.id} value={w.id}>{w.name}</option>
-                ))}
-              </select>
+                onChange={setFromWalletId}
+                options={wallets.map(w => ({ value: w.id, label: w.name }))}
+              />
             </div>
             <div className="flex justify-center">
               <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-full">
@@ -194,17 +191,13 @@ export default function TransferModal({
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Ke Dompet</label>
-              <select
+              <CustomSelect
+                label="Ke Dompet"
                 value={toWalletId}
                 required
-                onChange={(e) => setToWalletId(e.target.value)}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-800 dark:text-gray-100"
-              >
-                {wallets.map(w => (
-                  <option key={w.id} value={w.id}>{w.name}</option>
-                ))}
-              </select>
+                onChange={setToWalletId}
+                options={wallets.map(w => ({ value: w.id, label: w.name }))}
+              />
             </div>
           </div>
 

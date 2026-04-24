@@ -5,6 +5,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { X, Wallet as WalletIcon, Tag, AlertCircle, Target } from 'lucide-react';
 import { Wallet, Category, Transaction, Goal } from '../types';
 import { useNavigate } from 'react-router-dom';
+import CustomSelect from './CustomSelect';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -417,15 +418,11 @@ export default function AddTransactionModal({
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Kategori</label>
             {filteredCategories.length > 0 ? (
-              <select
+              <CustomSelect
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-gray-800 dark:text-gray-100"
-              >
-                {filteredCategories.map(c => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
+                onChange={setCategory}
+                options={filteredCategories.map(c => ({ value: c.name, label: c.name }))}
+              />
             ) : (
               <input
                 type="text"
@@ -441,17 +438,13 @@ export default function AddTransactionModal({
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Dompet / Rekening</label>
             {wallets.length > 0 ? (
-              <select
+              <CustomSelect
                 value={walletId}
                 required
-                onChange={(e) => setWalletId(e.target.value)}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-gray-800 dark:text-gray-100"
-              >
-                <option value="" disabled>Pilih Dompet...</option>
-                {wallets.map(w => (
-                  <option key={w.id} value={w.id}>{w.name}</option>
-                ))}
-              </select>
+                onChange={setWalletId}
+                placeholder="Pilih Dompet..."
+                options={wallets.map(w => ({ value: w.id, label: w.name }))}
+              />
             ) : (
               <div className="text-sm text-red-500 dark:text-red-400 font-medium px-1 py-1">Belum ada dompet, silakan buat di menu Dompet & Rekening terlebih dahulu.</div>
             )}

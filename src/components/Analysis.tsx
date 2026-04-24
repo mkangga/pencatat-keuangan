@@ -4,6 +4,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Ba
 import { subMonths, isAfter, format, isSameMonth, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import SummaryCards from './SummaryCards';
+import CustomSelect from './CustomSelect';
 import { User } from 'firebase/auth';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
@@ -361,17 +362,16 @@ export default function Analysis({
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 font-sans">Grafik Analisis</h2>
-        <select 
-          value={format(selectedMonth, 'yyyy-MM')} 
-          onChange={(e) => setSelectedMonth(parseISO(e.target.value + '-01'))}
-          className="w-full sm:w-auto p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800 dark:text-gray-100 transition-colors duration-300"
-        >
-          {months.map(month => (
-            <option key={format(month, 'yyyy-MM')} value={format(month, 'yyyy-MM')}>
-              {format(month, 'MMMM yyyy', { locale: id })}
-            </option>
-          ))}
-        </select>
+        <CustomSelect
+          label=""
+          value={format(selectedMonth, 'yyyy-MM')}
+          onChange={(val) => setSelectedMonth(parseISO(val + '-01'))}
+          options={months.map(month => ({
+            value: format(month, 'yyyy-MM'),
+            label: format(month, 'MMMM yyyy', { locale: id })
+          }))}
+          placeholder="Pilih Bulan"
+        />
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
