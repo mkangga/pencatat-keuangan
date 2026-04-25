@@ -170,8 +170,8 @@ export default function Riwayat({ transactions, onViewDetail, onEdit }: RiwayatP
 
           {/* Summary Bar */}
           <div className="bg-purple-50/50 dark:bg-purple-900/10 px-4 py-3 rounded-xl border border-purple-100/50 dark:border-purple-900/20">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+              <div className="flex items-center justify-between sm:justify-start gap-4">
                 <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                   <PlusCircle size={14} strokeWidth={2.5} />
                   <span>+{formatCurrency(totals.income)}</span>
@@ -181,8 +181,9 @@ export default function Riwayat({ transactions, onViewDetail, onEdit }: RiwayatP
                   <span>-{formatCurrency(totals.expense)}</span>
                 </div>
               </div>
-              <div className={`flex items-center gap-1.5 ${totals.income - totals.expense >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'}`}>
-                <span>Selisih: {totals.income - totals.expense >= 0 ? '+' : ''}{formatCurrency(totals.income - totals.expense)}</span>
+              <div className={`flex items-center justify-between sm:justify-end gap-1.5 pt-3 sm:pt-0 border-t sm:border-t-0 border-purple-200/50 dark:border-purple-800/30 ${totals.income - totals.expense >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'}`}>
+                <span className="sm:hidden text-gray-500 dark:text-gray-400">Total Selisih</span>
+                <span><span className="hidden sm:inline">Selisih: </span>{totals.income - totals.expense >= 0 ? '+' : ''}{formatCurrency(totals.income - totals.expense)}</span>
               </div>
             </div>
           </div>
