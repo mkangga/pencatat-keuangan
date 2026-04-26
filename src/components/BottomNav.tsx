@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Home, PlusCircle, MinusCircle, PieChart, ReceiptText, 
   ClipboardList, CreditCard, TrendingUp, Wallet, Tags, Settings, User, Target, Briefcase
@@ -25,12 +25,19 @@ interface BottomNavProps {
 }
 
 export default function BottomNav({ tabs }: BottomNavProps) {
+  const location = useLocation();
   const defaultTabs = ['Dashboard', 'Masuk', 'Keluar', 'Analisis', 'Riwayat'];
   const activeTabs = tabs || defaultTabs;
 
   const navItems = activeTabs
     .map(tabName => ALL_NAV_ITEMS.find(item => item.name === tabName))
     .filter((item): item is typeof ALL_NAV_ITEMS[0] => !!item);
+
+  const handleNavClick = (path: string) => {
+    if (path === '/' && location.pathname === '/') {
+      window.dispatchEvent(new CustomEvent('resetDashboardDate'));
+    }
+  };
 
   return (
     <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 flex justify-around items-center py-3 px-1 z-50 rounded-3xl shadow-2xl shadow-emerald-900/10 transition-all duration-300">
@@ -40,6 +47,7 @@ export default function BottomNav({ tabs }: BottomNavProps) {
           <NavLink
             key={item.name}
             to={item.path}
+            onClick={() => handleNavClick(item.path)}
             className={({ isActive }) => `flex flex-col items-center gap-1.5 px-3 py-1 rounded-2xl text-[10px] font-bold transition-all ${
               isActive 
                 ? 'text-emerald-600 dark:text-emerald-400 scale-110' 

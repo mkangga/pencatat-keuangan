@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { User } from 'firebase/auth';
 import { auth } from '../firebase';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Home, PlusCircle, MinusCircle, 
   ClipboardList, CreditCard, TrendingUp, Settings, LogOut, PieChart, Wallet, Tags,
@@ -19,6 +19,7 @@ interface SidebarProps {
 
 export default function Sidebar({ user, className = '', onItemClick, isCollapsed = false, isDarkMode, toggleDarkMode }: SidebarProps) {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -43,11 +44,18 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
     { name: 'Pengaturan', path: '/pengaturan', icon: Settings },
   ];
 
+  const handleNavClick = (path: string) => {
+    onItemClick?.();
+    if (path === '/' && location.pathname === '/') {
+      window.dispatchEvent(new CustomEvent('resetDashboardDate'));
+    }
+  };
+
   return (
     <aside className={`bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex-shrink-0 flex flex-col h-full min-h-0 transition-colors duration-300 ${className}`}>
       <NavLink 
         to="/profil" 
-        onClick={onItemClick}
+        onClick={() => handleNavClick('/profil')}
         className={`p-4 flex items-center gap-3 border-b border-gray-50 dark:border-gray-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
       >
         <img 
@@ -75,7 +83,7 @@ export default function Sidebar({ user, className = '', onItemClick, isCollapsed
             <NavLink
               key={item.name}
               to={item.path}
-              onClick={onItemClick}
+              onClick={() => handleNavClick(item.path)}
               title={isCollapsed ? item.name : ''}
               className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors w-full text-left ${
                 isActive 

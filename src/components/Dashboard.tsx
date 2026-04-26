@@ -524,6 +524,20 @@ export default function Dashboard({ user, isDarkMode, toggleDarkMode }: Dashboar
     })
   };
 
+  useEffect(() => {
+    const handleReset = () => {
+      setIsRangeMode(false);
+      setSelectedDate(format(new Date(), 'yyyy-MM-dd'));
+      setIsFilterExpanded(false);
+      setFilterType('all');
+      setFilterCategory('');
+      setSearchQuery('');
+    };
+
+    window.addEventListener('resetDashboardDate', handleReset);
+    return () => window.removeEventListener('resetDashboardDate', handleReset);
+  }, []);
+
   return (
     <div className="flex h-screen bg-[#f8fafc] dark:bg-gray-900 overflow-hidden transition-colors duration-300">
       <Sidebar user={user} className={`hidden md:flex transition-all duration-300 h-full ${isSidebarCollapsed ? 'w-20' : 'w-64'}`} isCollapsed={isSidebarCollapsed} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
